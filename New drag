@@ -68,3 +68,149 @@ const handleTextFieldDragEnd = () => {
     setDragging(false);
   }
 };
+
+
+
+
+
+,,,,,,,,,, ,
+import React, { useState, useRef } from "react";
+import axios from "axios";
+
+const DraggableTextField = ({ text, x, y, onDrag }) => {
+  const handleDragStart = (e) => {
+    onDrag(e, text, x, y);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const CanvasWithDragAndDrop = () => {
+  const canvasRef = useRef(null);
+  const [textFields, setTextFields] = useState([]);
+  const [dragging, setDragging] = useState(false);
+  const [draggedText, setDraggedText] = useState("");
+  const [draggedOffset, setDraggedOffset] = useState({ x: 0, y: 0 });
+  const [draggedPosition, setDraggedPosition] = useState({ x: 0, y: 0 });
+  const [draggedStartX, setDraggedStartX] = useState(0);
+  const [draggedStartY, setDraggedStartY] = useState(0);
+
+  const handleTextFieldDragStart = (e, text, x, y) => {
+    e.dataTransfer.setData("text/plain", text);
+    setDragging(true);
+    setDraggedText(text);
+    setDraggedOffset({ x: e.clientX - x, y: e.clientY - y });
+    setDraggedStartX(x);
+    setDraggedStartY(y);
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    if (dragging) {
+      const newX = e.clientX - draggedOffset.x;
+      const newY = e.clientY - draggedOffset.y;
+
+      const canvas = canvasRef.current;
+      const canvasRect = canvas.getBoundingClientRect();
+
+      const minX = 0;
+      const maxX = canvasRect.width - (draggedStartX - newX);
+      const minY = 0;
+      const maxY = canvasRect.height - (draggedStartY - newY);
+
+      const updatedX = Math.max(minX, Math.min(maxX, newX));
+      const updatedY = Math.max(minY, Math.min(maxY, newY));
+
+      setDraggedPosition({ x: updatedX, y: updatedY });
+    }
+  };
+
+  const handleTextFieldDragEnd = () => {
+    if (dragging) {
+      const updatedTextFields = textFields.map((textField) =>
+        textField.text === draggedText
+          ? { ...textField, x: draggedPosition.x, y: draggedPosition.y }
+          : textField
+      );
+
+      setTextFields(updatedTextFields);
+      setDragging(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+
+    const droppedText = e.dataTransfer.getData("text/plain");
+    const newTextField = {
+      text: droppedText,
+      x: draggedPosition.x,
+      y: draggedPosition.y,
+    };
+
+    setTextFields([...textFields, newTextField]);
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          float: "left",
+          width: "200px",
+          marginRight: "20px",
+          padding: "10px",
+          border: "1px solid #ccc",
+          borderRadius: "5px",
+        }}
+      >
+        <DraggableTextField
+          text="Text Field 1"
+          x={0}
+          y={0}
+          onDrag={handleTextFieldDragStart}
+        />
+        <DraggableTextField
+          text="Text Field 2"
+          x={0}
+          y={30}
+          onDrag={handleTextFieldDragStart}
+        />
+      </div>
+      <canvas
+        ref={canvasRef}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleTextFieldDragEnd}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        style={{ border: "1px solid #000" }}
+      />
+      {textFields.map((textField, index) => (
+        <DraggableTextField
+          key={index}
+          text={textField.text}
+          x={textField.x}
+          y={textField.y}
+          onDrag={handleTextFieldDragStart}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default CanvasWithDragAndDrop;
+
