@@ -1,0 +1,70 @@
+const DraggableTextField = ({ text, x, y, onDrag }) => {
+  const handleDragStart = (e) => {
+    onDrag(e, text, x, y);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+
+‐----------------
+
+const handleTextFieldDragStart = (e, text, x, y) => {
+  e.dataTransfer.setData("text/plain", text);
+  setDragging(true);
+  setDraggedText(text);
+  setDraggedOffset({ x: e.clientX - x, y: e.clientY - y });
+  setDraggedStartX(x); // Store the initial X position
+  setDraggedStartY(y); // Store the initial Y position
+};
+___________________
+const handleCanvasMouseMove = (e) => {
+  if (dragging) {
+    const newX = e.clientX - draggedOffset.x;
+    const newY = e.clientY - draggedOffset.y;
+
+    // Ensure the dragged element stays within the canvas boundaries
+    const canvas = canvasRef.current;
+    const canvasRect = canvas.getBoundingClientRect();
+
+    const minX = 0;
+    const maxX = canvasRect.width - draggedWidth; // Adjust draggedWidth as needed
+    const minY = 0;
+    const maxY = canvasRect.height - draggedHeight; // Adjust draggedHeight as needed
+
+    const updatedX = Math.max(minX, Math.min(maxX, newX));
+    const updatedY = Math.max(minY, Math.min(maxY, newY));
+
+    setDraggedPosition({ x: updatedX, y: updatedY });
+  }
+};
+...................
+const handleTextFieldDragEnd = () => {
+  if (dragging) {
+    // Update the position of the dragged text field
+    const updatedTextFields = textFields.map((textField) =>
+      textField.text === draggedText
+        ? { ...textField, x: draggedPosition.x, y: draggedPosition.y }
+        : textField
+    );
+
+    setTextFields(updatedTextFields);
+    setDragging(false);
+  }
+};
