@@ -1,0 +1,21 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const app = express();
+const port = 3001; // Choose your port
+
+app.use(bodyParser.json());
+
+const db = []; // Simulated database storage
+
+app.post("/storeTextField", (req, res) => {
+  const { text, x, y } = req.body;
+
+  // Store the data in the database (in-memory simulation)
+  db.push({ text, x, y });
+
+  res.sendStatus(200);
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
