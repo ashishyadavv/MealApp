@@ -1,0 +1,143 @@
+import React, { useState, useRef } from "react";
+import axios from "axios";
+
+const DraggableTextField = ({ text }) => {
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData("text/plain", text);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        marginBottom: "10px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const CanvasWithDragAndDrop = () => {
+  const canvasRef = useRef(null);
+  const [textFields, setTextFields] = useState([]);
+  const [positions, setPositions] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    for (const textField of textFields) {
+      if (
+        mouseX >= textField.x &&
+        mouseX <= textField.x + 100 &&
+        mouseY >= textField.y - 18 &&
+        mouseY <= textField.y
+      ) {
+        setDragging(true);
+        setOffset({ x: mouseX - textField.x, y: mouseY - textField.y });
+        setPositions({ x: textField.x, y: textField.y });
+        break;
+      }
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (dragging) {
+      setPositions({
+        x: e.clientX - offset.x,
+        y: e.clientY - offset.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (dragging) {
+      setDragging(false);
+      setOffset({ x: 0, y: 0 });
+
+      // Store the dropped text field's coordinates in the database
+      const newTextField = { text: "Dropped Text", x: positions.x, y: positions.y };
+      storeTextFieldInDatabase(newTextField);
+    }
+  };
+
+  const storeTextFieldInDatabase = async (textField) => {
+    try {
+      await axios.post("/storeTextField", textField);
+      // Success
+    } catch (error) {
+      console.error("Error storing text field:", error);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    // Handle the dropped element
+
+    const droppedText = e.dataTransfer.getData("text/plain");
+    const newTextField = {
+      text: droppedText,
+      x: positions.x,
+      y: positions.y,
+    };
+
+    setTextFields([...textFields, newTextField]);
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          float: "left",
+          width: "200px",
+          marginRight: "20px",
+          padding: "10px",
+          border: "1px solid #ccc",
+          borderRadius: "5px",
+        }}
+      >
+        <p>Drag these text fields onto the canvas:</p>
+        <DraggableTextField text="Text Field 1" />
+        <DraggableTextField text="Text Field 2" />
+        {/* Add more draggable text fields as needed */}
+      </div>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        style={{ border: "1px solid #000" }}
+      />
+      {textFields.map((textField, index) => (
+        <div
+          key={index}
+          style={{
+            position: "absolute",
+            left: textField.x,
+            top: textField.y,
+            padding: "5px",
+            background: "#ccc",
+            cursor: "move",
+            zIndex: 9999,
+          }}
+        >
+          {textField.text}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default CanvasWithDragAndDrop;
