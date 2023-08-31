@@ -1,0 +1,25 @@
+import React from "react";
+
+const DraggableTextField = ({ text, onDragStart }) => {
+  const handleDragStart = (e) => {
+    onDragStart(e, text);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        marginBottom: "10px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+export default DraggableTextField;
