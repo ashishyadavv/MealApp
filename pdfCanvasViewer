@@ -1,0 +1,60 @@
+import React, { useRef, useEffect, useState } from "react";
+import pdfjsLib from "pdfjs-dist/build/pdf";
+import DraggableTextField from "./DraggableTextField"; // Adjust the import path
+
+const PdfCanvasViewer = () => {
+  // ... (same as previous code)
+
+  const handleDragStart = (e, text) => {
+    e.dataTransfer.setData("text/plain", text);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const droppedText = e.dataTransfer.getData("text/plain");
+
+    setTextFields([
+      ...textFields,
+      { text: droppedText, x: mouseX, y: mouseY },
+    ]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          float: "left",
+          width: "200px",
+          marginRight: "20px",
+          padding: "10px",
+          border: "1px solid #ccc",
+          borderRadius: "5px",
+        }}
+      >
+        <p>Drag these text fields onto the canvas:</p>
+        <DraggableTextField text="Text Field 1" onDragStart={handleDragStart} />
+        <DraggableTextField text="Text Field 2" onDragStart={handleDragStart} />
+        {/* Add more draggable text fields as needed */}
+      </div>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      />
+    </div>
+  );
+};
+
+export default PdfCanvasViewer;
