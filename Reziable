@@ -1,0 +1,155 @@
+To allow horizontal resizing of text fields once they are dropped inside the canvas, you can implement a resize handle on the text field element. Here's how you can modify the code to achieve this functionality:
+
+1. **Add a Resize Handle to the Text Field:**
+
+Update the `DraggableTextField` component to include a resize handle. You can use a handle on the right side (for horizontal resizing). Here's an example:
+
+```jsx
+const DraggableTextField = ({ text, x, y, onDragStart, onResize }) => {
+  const handleDragStart = (e) => {
+    onDragStart(e, text, x, y);
+  };
+
+  const handleResize = (e) => {
+    onResize(e, text, x, y);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        cursor: "move",
+      }}
+    >
+      <div
+        className="resize-handle"
+        onMouseDown={handleResize}
+        style={{
+          width: "10px", // Adjust the size of the resize handle
+          height: "100%",
+          position: "absolute",
+          right: "0",
+          top: "0",
+          cursor: "e-resize",
+        }}
+      />
+      {text}
+    </div>
+  );
+};
+```
+
+2. **Handle Resizing Events:**
+
+Now, you need to handle the resizing events. You can use the `onMouseDown` event on the resize handle to initiate resizing and the `onMouseMove` event to adjust the width of the text field. Additionally, you should also handle the `onMouseUp` event to stop resizing. Here's how you can modify the `CanvasWithDragAndDrop` component:
+
+```jsx
+const CanvasWithDragAndDrop = () => {
+  // ... (previous code)
+
+  const [resizing, setResizing] = useState(false);
+  const [resizeInfo, setResizeInfo] = useState({});
+
+  const handleResizeStart = (e, text, x, y) => {
+    e.stopPropagation();
+    setResizing(true);
+    setResizeInfo({ text, startX: e.clientX, startWidth: e.target.parentElement.clientWidth });
+  };
+
+  const handleResize = (e) => {
+    if (resizing) {
+      const deltaX = e.clientX - resizeInfo.startX;
+      const newWidth = Math.max(50, resizeInfo.startWidth + deltaX); // Adjust min width as needed
+      setResizeInfo((prevState) => ({ ...prevState, newWidth }));
+    }
+  };
+
+  const handleResizeEnd = () => {
+    if (resizing) {
+      setResizing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (resizing) {
+      const updatedTextFields = textFields.map((textField) =>
+        textField.text === resizeInfo.text
+          ? { ...textField, width: resizeInfo.newWidth }
+          : textField
+      );
+
+      setTextFields(updatedTextFields);
+    }
+  }, [resizing, resizeInfo, textFields]);
+
+  // ... (rest of the code)
+
+  return (
+    <div>
+      {/* ... (previous code) */}
+      {textFields.map((textField, index) => (
+        <DraggableTextField
+          key={index}
+          text={textField.text}
+          x={textField.x}
+          y={textField.y}
+          onDragStart={handleTextFieldDragStart}
+          onResize={handleResizeStart}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+In this updated code, a resizable handle is added to each text field. When you click and drag the handle, the text field's width will adjust accordingly. You can adjust the minimum width (`Math.max(50, ...)`) as needed to prevent the text field from becoming too narrow.
+
+Please note that this code provides horizontal resizing. If you also want vertical resizing, you can follow a similar approach by adding a resize handle to the bottom of the text field and adjusting the height accordingly.
+
+
+const DraggableTextField = ({ text, x, y, onDragStart, onResize }) => {
+  const handleDragStart = (e) => {
+    onDragStart(e, text, x, y);
+  };
+
+  const handleResize = (e) => {
+    onResize(e, text, x, y);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        cursor: "move",
+      }}
+    >
+      <div
+        className="resize-handle"
+        onMouseDown={handleResize}
+        style={{
+          width: "10px", // Adjust the size of the resize handle
+          height: "100%",
+          position: "absolute",
+          right: "0",
+          top: "0",
+          cursor: "e-resize",
+        }}
+      />
+      {text}
+    </div>
+  );
+};
