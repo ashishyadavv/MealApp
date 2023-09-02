@@ -1,0 +1,149 @@
+import React, { useState, useRef } from "react";
+
+const DraggableTextField = ({ text, x, y, onDragStart }) => {
+  const handleDragStart = (e) => {
+    onDragStart(e, text, x, y);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const CanvasWithDragAndDrop = () => {
+  const canvasRef = useRef(null);
+  const [textFields, setTextFields] = useState([]);
+  const [dragging, setDragging] = useState(false);
+  const [draggedText, setDraggedText] = useState("");
+  const [draggedOffset, setDraggedOffset] = useState({ x: 0, y: 0 });
+  const [draggedPosition, setDraggedPosition] = useState({ x: 0, y: 0 });
+
+  const handleTextFieldDragStart = (e, text, x, y) => {
+    e.dataTransfer.setData("text/plain", text);
+    setDragging(true);
+    setDraggedText(text);
+    setDraggedOffset({ x: e.clientX - x, y: e.clientY - y });
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    if (dragging) {
+      const newX = e.clientX - draggedOffset.x;
+      const newY = e.clientY - draggedOffset.y;
+
+      // Ensure the dragged element stays within the canvas boundaries
+      const canvas = canvasRef.current;
+      const minX = 0;
+      const maxX = canvas.clientWidth - widthOfYourTextField; // Adjust based on your text field's width
+      const minY = 0;
+      const maxY = canvas.clientHeight - heightOfYourTextField; // Adjust based on your text field's height
+
+      const updatedX = Math.max(minX, Math.min(maxX, newX));
+      const updatedY = Math.max(minY, Math.min(maxY, newY));
+
+      setDraggedPosition({ x: updatedX, y: updatedY });
+    }
+  };
+
+  const handleTextFieldDragEnd = () => {
+    if (dragging) {
+      // Update the position of the dragged text field
+      const updatedTextFields = textFields.map((textField) =>
+        textField.text === draggedText
+          ? { ...textField, x: draggedPosition.x, y: draggedPosition.y }
+          : textField
+      );
+
+      setTextFields(updatedTextFields);
+      setDragging(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+
+    const droppedText = e.dataTransfer.getData("text/plain");
+  
+    // Calculate the drop coordinates relative to the canvas
+    const canvas = canvasRef.current;
+    const dropX = e.clientX - canvas.getBoundingClientRect().left;
+    const dropY = e.clientY - canvas.getBoundingClientRect().top;
+
+    // Create a new text field with the dropped text and calculated coordinates
+    const newTextField = {
+      text: droppedText,
+      x: dropX,
+      y: dropY,
+    };
+
+    // Add the new text field to the array of textFields
+    setTextFields([...textFields, newTextField]);
+  };
+
+  const widthOfYourTextField = 100; // Adjust based on your text field's width
+  const heightOfYourTextField = 30; // Adjust based on your text field's height
+
+  return (
+    <div>
+      <div
+        style={{
+          float: "left",
+          width: "200px",
+          marginRight: "20px",
+          padding: "10px",
+          border: "1px solid #ccc",
+          borderRadius: "5px",
+        }}
+      >
+        <DraggableTextField
+          text="Text Field 1"
+          x={0}
+          y={0}
+          onDragStart={handleTextFieldDragStart}
+        />
+        <DraggableTextField
+          text="Text Field 2"
+          x={0}
+          y={30}
+          onDragStart={handleTextFieldDragStart}
+        />
+      </div>
+      <canvas
+        ref={canvasRef}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleTextFieldDragEnd}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        style={{
+          border: "1px solid #000",
+          width: "600px", // Set the canvas width
+          height: "400px", // Set the canvas height
+        }}
+      />
+      {textFields.map((textField, index) => (
+        <DraggableTextField
+          key={index}
+          text={textField.text}
+          x={textField.x}
+          y={textField.y}
+          onDragStart={handleTextFieldDragStart}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default CanvasWithDragAndDrop;
