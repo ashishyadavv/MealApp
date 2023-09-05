@@ -1,0 +1,270 @@
+const handleMouseMove = (e) => {
+  if (resizedField) {
+    const deltaX = e.clientX - resizeStart.x;
+    const deltaY = e.clientY - resizeStart.y;
+
+    const newWidth = Math.max(50, resizedField.width + deltaX);
+    const newHeight = Math.max(20, resizedField.height + deltaY);
+
+    const updatedFields = textFields.map((field) =>
+      field.id === resizedField.id
+        ? { ...field, width: newWidth, height: newHeight }
+        : field
+    );
+
+    setTextFields(updatedFields);
+
+    setResizeStart({ x: e.clientX, y: e.clientY });
+  }
+};
+‐---------------------
+
+
+import React, { useState, useRef } from "react";
+import axios from "axios";
+
+const DraggableTextField = ({ text }) => {
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData("text/plain", text);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        padding: "5px",
+        border: "1px solid #ccc",
+        borderRadius: "5px",
+        marginBottom: "10px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const CanvasWithDragAndDrop = () => {
+  const canvasRef = useRef(null);
+  const [textFields, setTextFields] = useState([]);
+  const [draggedField, setDraggedField] = useState(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e, textField) => {
+    e.stopPropagation();
+    setDraggedField(textField);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseMove = (e) => {
+    if (draggedField) {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+
+      const updatedFields = textFields.map((field) =>
+        field.id === draggedField.id
+          ? { ...field, x: field.x + deltaX, y: field.y + deltaY }
+          : field
+      );
+
+      setTextFields(updatedFields);
+
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggedField(null);
+
+    // Store the updated text field positions in the database
+    storeTextFieldPositionsInDatabase(textFields);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+
+    const droppedText = e.dataTransfer.getData("text/plain");
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const dropX = e.clientX - rect.left;
+    const dropY = e.clientY - rect.top;
+
+    // Add the dropped text field to the canvas
+    const newTextField = {
+      id: Date.now().toString(),
+      text: droppedText,
+      x: dropX,
+      y: dropY,
+      width: 100, // Initial width
+      height: 30, // Initial height
+    };
+
+    setTextFields([...textFields, newTextField]);
+  };
+
+  const storeTextFieldPositionsInDatabase = async (fields) => {
+    try {
+      // Assuming you have an API to update text field positions in the database
+      await axios.post("/updateTextFieldPositions", fields);
+      // Success
+    } catch (error) {
+      console.error("Error storing text field positions:", error);
+    }
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          float: "left",
+          width: "200px",
+          marginRight: "20px",
+          padding: "10px",
+          border: "1px solid #ccc",
+          borderRadius: "5px",
+        }}
+      >
+        <p>Drag these text fields onto the canvas:</p>
+        <DraggableTextField text="Text Field 1" />
+        <DraggableTextField text="Text Field 2" />
+        {/* Add more draggable text fields as needed */}
+      </div>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        style={{
+          border: "1px solid #000",
+          width: "600px", // Set the canvas width
+          height: "400px", // Set the canvas height
+        }}
+      >
+        {textFields.map((textField) => (
+          <div
+            key={textField.id}
+            style={{
+              position: "absolute",
+              left: textField.x,
+              top: textField.y,
+              width: textField.width + "px",
+              height: textField.height + "px",
+              padding: "5px",
+              background: "#ccc",
+              cursor: "move",
+              zIndex: 9999,
+            }}
+            onMouseDown={(e) => handleMouseDown(e, textField)}
+          >
+            {textField.text}
+          </div>
+        ))}
+      </canvas>
+    </div>
+  );
+};
+
+export default CanvasWithDragAndDrop;
+
+
+
+
+--------------##########
+// Define your Sequelize models for PDF templates and text fields
+const PDFTemplate = sequelize.define('PDFTemplate', {
+  data: DataTypes.BLOB, // Store the PDF as binary data
+});
+
+const TextField = sequelize.define('TextField', {
+  data: DataTypes.JSON, // Store text field data as JSON
+});
+
+// Create routes and controllers to handle PDF and text field data
+
+// Route to save a PDF template
+app.post('/upload-pdf', async (req, res) => {
+  try {
+    const pdfData = req.body.pdfData; // Binary PDF data
+    const pdf = await PDFTemplate.create({ data: pdfData });
+    res.status(201).json({ pdf });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Unable to save PDF' });
+  }
+});
+
+// Route to save text field data
+app.post('/add-text-field', async (req, res) => {
+  try {
+    const textFieldData = req.body.textFieldData; // JSON text field data
+    const textField = await TextField.create({ data: textFieldData });
+    res.status(201).json({ textField });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Unable to save text field' });
+  }
+});Frontend (React):import React, { useState } from 'react';
+import axios from 'axios';
+
+function App() {
+  const [pdfFile, setPdfFile] = useState(null);
+  const [textFieldData, setTextFieldData] = useState([]);
+  const [textFieldText, setTextFieldText] = useState('');
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setPdfFile(file);
+  };
+
+  const handleAddTextField = () => {
+    const newTextField = { text: textFieldText, x: 0, y: 0, width: 100, height: 30 };
+    setTextFieldData([...textFieldData, newTextField]);
+    setTextFieldText('');
+  };
+
+  const handleFormSubmit = async () => {
+    try {
+      // Upload PDF file to the server
+      const formData = new FormData();
+      formData.append('pdfData', pdfFile);
+
+      const pdfResponse = await axios.post('/upload-pdf', formData);
+
+      // Upload text field data to the server
+      const textFieldResponse = await axios.post('/add-text-field', {
+        textFieldData: textFieldData,
+      });
+
+      // Handle successful responses
+      console.log('PDF uploaded:', pdfResponse.data);
+      console.log('Text field data uploaded:', textFieldResponse.data);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  return (
+    <div>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleAddTextField}>Add Text Field</button>
+      <input
+        type="text"
+        value={textFieldText}
+        onChange={(e) => setTextFieldText(e.target.value)}
+      />
+      <div>
+        {textFieldData.map((textField, index) => (
+          <div key={index}>{textField.text}</div>
+        ))}
+      </div>
+      <button onClick={handleFormSubmit}>Submit</button>
+    </div>
+  );
+}
+
+export default App;
+
+
