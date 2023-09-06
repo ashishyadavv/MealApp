@@ -1,0 +1,277 @@
+import React, { useEffect, useState, useRef } from "react";
+import { library } from "../Utility/ApiMethod";
+import { useParams } from "react-router-dom";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import "pdfjs-dist/web/pdf_viewer.css"; // Import PDF viewer CSS
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = require("pdfjs-dist/build/pdf.worker.entry");
+
+const DraggableTextField = ({ text }) => {
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData("text/plain", text);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        padding: "5px",
+        border: "1px solid #000",
+        borderRadius: "5px",
+        marginBottom: "10px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const CanvasRenderPdf = () => {
+  const canvasRefs = useRef([]);
+  const { id } = useParams();
+  const [pdfData, setPdfData] = useState({});
+  const [textFields, setTextFields] = useState([]);
+  const [resizing, setResizing] = useState(false);
+  const [resizedTextField, setResizedTextField] = useState(null);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
+  const [draggedField, setDraggedField] = useState(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  let pdfurl = "";
+
+  const getPdfFile = async () => {
+    try {
+      const response = await library(id);
+      pdfurl = process.env.REACT_APP_API_URL.concat(
+        response.data.librariesData.disclouser_file
+      );
+      setPdfData(response.data.librariesData);
+      pdfRender();
+    } catch (error) {
+      console.error("Error fetching PDF:", error);
+    }
+  };
+
+  const pdfRender = () => {
+    pdfjsLib.getDocument(pdfurl).promise.then((pdf) => {
+      const pages = Array.from({ length: pdf.numPages }, (_, index) => index + 1); // Create an array of page numbers
+
+      Promise.all(
+        pages.map((pageNum) =>
+          pdf.getPage(pageNum).then((page) => {
+            const canvas = document.createElement("canvas"); // Create a new canvas element
+            const context = canvas.getContext("2d");
+            const viewport = page.getViewport({ scale: 1.5 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            page.render({ canvasContext: context, viewport });
+            canvasRefs.current[pageNum - 1] = canvas; // Store canvas references
+          })
+        )
+      ).then(() => {
+        // Once all pages are rendered, update the state
+        setPdfPages(canvasRefs.current);
+      });
+    });
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+
+    const droppedText = e.dataTransfer.getData("text/plain");
+
+    const canvas = canvasRefs.current[0]; // Use the first canvas for text field placement
+
+    const canvasRect = canvas.getBoundingClientRect();
+
+    const dropX = e.pageX - canvasRect.left;
+    const dropY = e.pageY - canvasRect.top;
+
+    if (true) {
+      const newTextField = {
+        id: Date.now(),
+        text: droppedText,
+        x: dropX,
+        y: dropY,
+        width: 100, // Initial width
+        height: 20, // Initial height
+      };
+
+      setTextFields([...textFields, newTextField]);
+      storeTextFieldInDatabase(newTextField);
+    }
+  };
+
+  const handleMouseDown = (e, textField) => {
+    e.stopPropagation();
+
+    const canvas = canvasRefs.current[0]; // Use the first canvas for text field interaction
+
+    const canvasRect = canvas.getBoundingClientRect();
+
+    const mouseX = e.clientX - canvasRect.left;
+    const mouseY = e.clientY - canvasRect.top;
+
+    setDraggedField(textField);
+    setDragStart({ x: mouseX, y: mouseY });
+
+    for (const textField of textFields) {
+      if (
+        mouseX >= textField.x &&
+        mouseX <= textField.x + textField.width &&
+        mouseY >= textField.y &&
+        mouseY <= textField.y + textField.height
+      ) {
+        setResizing(true);
+        setResizedTextField(textField);
+        setResizeStart({ x: mouseX, y: mouseY });
+        break;
+      }
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (resizing && resizedTextField && !draggedField) {
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      const deltaX = mouseX - resizeStart.x;
+      const deltaY = mouseY - resizeStart.y;
+
+      const newWidth = Math.max(50, resizedTextField.width + deltaX);
+      const newHeight = Math.max(20, resizedTextField.height + deltaY);
+
+      const updatedFields = textFields.map((field) =>
+        field.id === resizedTextField.id
+          ? { ...field, width: newWidth, height: newHeight }
+          : field
+      );
+
+      setTextFields(updatedFields);
+
+      setResizeStart({ x: mouseX, y: mouseY });
+    }
+
+    if (draggedField) {
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      const deltaX = mouseX - dragStart.x;
+      const deltaY = mouseY - dragStart.y;
+
+      const updatedFields = textFields.map((field) =>
+        field.id === draggedField.id
+          ? { ...field, x: field.x + deltaX, y: field.y + deltaY }
+          : field
+      );
+
+      setTextFields(updatedFields);
+
+      setDragStart({ x: mouseX, y: mouseY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggedField(null);
+    setResizing(false);
+
+    // Store the updated text field positions in the database
+    storeTextFieldInDatabase(textFields);
+  };
+
+  const storeTextFieldInDatabase = async (textField) => {
+    try {
+      // Implement your logic to store the text field data in the database here
+      console.log("TextField stored in the database:", textField);
+    } catch (error) {
+      console.error("Error storing text field:", error);
+    }
+  };
+
+  useEffect(() => {
+    getPdfFile(id);
+  }, [id]);
+
+  return (
+    <div style={{ marginTop: "50px" }}>
+      <div
+<div
+      style={{
+        float: "left",
+        width: "200px",
+        marginRight: "20px",
+        padding: "10px",
+        border: "1px solid #000",
+        borderRadius: "5px",
+        marginLeft: "10px",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "25px",
+          fontWeight: "bolder",
+          textAlign: "center",
+          marginBottom: "10px",
+          backgroundColor: "#2980B9",
+          color: "white",
+        }}
+      >
+        Fields
+      </p>
+      <DraggableTextField text="Client Name" />
+      <DraggableTextField text="CRA Name" />
+      <DraggableTextField text="CRA Address" />
+      {/* Add more draggable text fields as needed */}
+    </div>
+    {pdfPages.map((canvas, index) => (
+      <div key={index}>
+        <canvas
+          ref={canvas}
+          onMouseMove={handleMouseMove}
+          onMouseDown={(e) => handleMouseDown(e, draggedField)}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          style={{
+            border: "1px solid #000",
+            marginRight: "20px",
+            marginBottom: "20px",
+          }}
+        />
+      </div>
+    ))}
+  </div>
+  {textFields.map((textField) => (
+    <div
+      key={textField.id}
+      onMouseUp={handleMouseUp}
+      style={{
+        position: "absolute",
+        left: textField.x,
+        top: textField.y,
+        width: textField.width + "px",
+        height: textField.height + "px",
+        padding: "5px",
+        background: "#9ca8e5",
+        cursor: "move",
+        zIndex: 9999,
+      }}
+      onMouseDown={(e) => handleMouseDown(e, textField)}
+    >
+      {textField.text}
+      <div
+        className="resize-handle"
+        style={{
+          width: "10px",
+          height: "10px",
+          position: "absolute",
+          bottom: "0",
+          right: "0",
+          cursor: "se-resize",
+        }}
+        onMouseDown={(e) => handleMouseDown(e, textField)}
+      ></div>
+    </div>
+  ))}
+</div>); };
