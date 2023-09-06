@@ -1,0 +1,248 @@
+import React, { useEffect, useState, useRef } from "react";
+import { library } from "../Utility/ApiMethod";
+import { useParams } from "react-router-dom";
+import pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import "pdfjs-dist/web/pdf_viewer.css"; // Import PDF viewer CSS
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = require("pdfjs-dist/build/pdf.worker.entry");
+
+const DraggableTextField = ({ text, handleDragStart }) => {
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      style={{
+        padding: "5px",
+        border: "1px solid #000",
+        borderRadius: "5px",
+        marginBottom: "10px",
+        cursor: "move",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const CanvasRenderPdf = () => {
+  const canvasContainerRef = useRef(null);
+  const { id } = useParams();
+  const [pdfData, setPdfData] = useState({});
+  const [textFields, setTextFields] = useState([]);
+  const [resizing, setResizing] = useState(false);
+  const [resizedTextField, setResizedTextField] = useState(null);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0 });
+  const [draggedField, setDraggedField] = useState(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [pdfPages, setPdfPages] = useState([]);
+  const [pdfLoading, setPdfLoading] = useState(true);
+
+  let pdfurl = "";
+
+  const getPdfFile = async () => {
+    try {
+      const response = await library(id);
+      pdfurl = process.env.REACT_APP_API_URL.concat(
+        response.data.librariesData.disclouser_file
+      );
+      setPdfData(response.data.librariesData);
+      pdfRender();
+    } catch (error) {
+      console.error("Error fetching PDF:", error);
+    }
+  };
+
+  const pdfRender = async () => {
+    try {
+      const pdf = await pdfjsLib.getDocument(pdfurl).promise;
+      const numPages = pdf.numPages;
+
+      const canvasRefs = [];
+      const pages = [];
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+
+        const canvas = document.createElement("canvas");
+        const canvasContainer = document.createElement("div");
+        canvasContainer.className = "canvas-container"; // Apply CSS styles to this class
+
+        canvasContainer.appendChild(canvas);
+
+        canvasContainerRef.current.appendChild(canvasContainer);
+
+        const viewport = page.getViewport({ scale: 1.5 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport });
+
+        canvasRefs.push(canvas);
+        pages.push(canvasContainer);
+      }
+
+      setPdfPages(pages);
+      setPdfLoading(false);
+    } catch (error) {
+      console.error("Error rendering PDF:", error);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggedField(null);
+    setResizing(false);
+
+    // Store the updated text field positions in the database
+    // You can implement your logic here to save text field positions
+  };
+
+  const handleDragStart = (e, textField) => {
+    e.dataTransfer.setData("text/plain", textField.text);
+  };
+
+  const handleTextFieldMouseDown = (e, textField) => {
+    e.stopPropagation();
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    setDraggedField(textField);
+    setDragStart({ x: mouseX, y: mouseY });
+
+    for (const textField of textFields) {
+      if (
+        mouseX >= textField.x &&
+        mouseX <= textField.x + textField.width &&
+        mouseY >= textField.y &&
+        mouseY <= textField.y + textField.height
+      ) {
+        setResizing(true);
+        setResizedTextField(textField);
+        setResizeStart({ x: mouseX, y: mouseY });
+      }
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (resizing && resizedTextField && !draggedField) {
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      const deltaX = mouseX - resizeStart.x;
+      const deltaY = mouseY - resizeStart.y;
+
+      const newWidth = Math.max(50, resizedTextField.width + deltaX);
+      const newHeight = Math.max(20, resizedTextField.height + deltaY);
+
+      const updatedFields = textFields.map((field) =>
+        field.id === resizedTextField.id
+          ? { ...field, width: newWidth, height: newHeight }
+          : field
+      );
+
+      setTextFields(updatedFields);
+
+      setResizeStart({ x: mouseX, y: mouseY });
+    }
+
+    if (draggedField) {
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      const deltaX = mouseX - dragStart.x;
+      const deltaY = mouseY - dragStart.y;
+
+      const updatedFields = textFields.map((field) =>
+        field.id === draggedField.id
+          ? { ...field, x: field.x + deltaX, y: field.y + deltaY }
+          : field
+      );
+
+      setTextFields(updatedFields);
+
+      setDragStart({ x: mouseX, y: mouseY });
+    }
+  };
+
+  useEffect(() => {
+    getPdfFile(id);
+  }, [id]);
+
+  return (
+    <div style={{ marginTop: "50px" }}>
+      <div>
+        <div
+          style={{
+            float: "left",
+            width: "200px",
+            marginRight: "20px",
+            padding: "10px",
+            border: "1px solid #000",
+            borderRadius: "5px",
+            marginLeft: "10px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "25px",
+              fontWeight: "bolder",
+              textAlign: "center",
+              marginBottom: "10px",
+              backgroundColor: "#2980B9",
+              color: "white",
+            }}
+          >
+            Fields
+          </p>
+          <DraggableTextField text="Client Name" handleDragStart={handleDragStart} />
+          <DraggableTextField text="CRA Name" handleDragStart={handleDragStart} />
+          <DraggableTextField text="CRA Address" handleDragStart={handleDragStart} />
+          {/* Add more draggable text fields as needed */}
+        </div>
+        <div ref={canvasContainerRef} className="canvas-container-wrapper" onMouseMove={handleMouseMove}>
+          {pdfLoading ? (
+            <p>Loading PDF...</p>
+          ) : (
+            pdfPages.map((page, index) => (
+              <div key={index} onMouseUp={handleMouseUp}>
+                {page}
+                {textFields.map((textField) => (
+                  <div
+                    key={textField.id}
+                    onMouseDown={(e) => handleTextFieldMouseDown(e, textField)}
+                    style={{
+                      position: "absolute",
+                      left: textField.x,
+                      top: textField.y,
+                      width: textField.width + "px",
+                      height: textField.height + "px",
+                      padding: "5px",
+                      background: "#9ca8e5",
+cursor: "move",
+                      zIndex: 9999,
+                    }}
+                  >
+                    {textField.text}
+                    <div
+                      className="resize-handle"
+                      style={{
+                        width: "10px",
+                        height: "10px",
+                        position: "absolute",
+                        bottom: "0",
+                        right: "0",
+                        cursor: "se-resize",
+                      }}
+                      onMouseDown={(e) => handleResizeStart(e, textField)}
+                    ></div>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CanvasRenderPdf;
