@@ -1,0 +1,29 @@
+const { PdfDocument } = require('../models');
+
+// Update an existing PDF document with new text fields
+const updatePdfDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { textFields } = req.body;
+
+    // Find the PDF document by ID
+    const pdfDocument = await PdfDocument.findByPk(id);
+
+    if (!pdfDocument) {
+      return res.status(404).json({ error: 'PDF document not found.' });
+    }
+
+    // Update the textFields property with the new data
+    pdfDocument.textFields = textFields;
+
+    // Save the changes to the database
+    await pdfDocument.save();
+
+    return res.status(200).json(pdfDocument);
+  } catch (error) {
+    console.error('Error updating PDF document:', error);
+    return res.status(500).json({ error: 'Unable to update PDF document.' });
+  }
+};
+
+module.exports = updatePdfDocument;
