@@ -1,0 +1,19 @@
+function transformFieldName(fieldName) {
+  // Split the field name by underscores
+  var words = fieldName.split('_');
+
+  // Capitalize the first letter of each word
+  for (var i = 0; i < words.length; i++) {
+    words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
+  }
+
+  // Join the words back together with spaces
+  var transformedName = words.join(' ');
+
+  return transformedName;
+}
+
+// Example usage:
+var databaseFieldName = "text_field";
+var transformedName = transformFieldName(databaseFieldName);
+console.log(transformedName); // Output: "Text Field"
