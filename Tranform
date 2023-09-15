@@ -1,0 +1,10 @@
+function transformToDatabaseField(text) {
+  // Replace spaces with underscores and convert to lowercase
+  var transformedText = text.replace(/\s+/g, '_').toLowerCase();
+  return transformedText;
+}
+
+// Example usage:
+var inputText = "Text Field";
+var transformedField = transformToDatabaseField(inputText);
+console.log(transformedField); // Output: "text_field"
