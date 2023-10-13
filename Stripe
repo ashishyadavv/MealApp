@@ -1,0 +1,72 @@
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
+const message = require("../utils/message");
+const status = require("../utils/status");
+const ErrorHandler = require("../utils/errorHandler");
+
+exports.createCustomer = async (req, res, next) => {
+  try {
+    const paymentAmount = 1000; // Replace with the actual payment amount in cents
+    const deductionPercentage = 2.2;
+    const deductionAmount = (paymentAmount * deductionPercentage) / 100;
+
+    // Check if customer wants the full amount to go to the onboarded account
+    const isFullAmountToOnboarded = req.body.fullAmountToOnboarded; // Adjust this based on your request data
+
+    if (isFullAmountToOnboarded) {
+      // Create a transfer to the onboarded account for the full payment
+      const onboardedAccount = await stripe.accounts.create({
+        country: "IN",
+        type: "custom",
+        email: "shashi@yopmail.com",
+        capabilities: {
+          card_payments: "Y",
+          transfers: "requested",
+        },
+      });
+
+      if (onboardedAccount) {
+        const transfer = await stripe.transfers.create({
+          amount: paymentAmount,
+          currency: "usd", // Replace with the appropriate currency code
+          destination: onboardedAccount.id,
+        });
+
+        // Deduct your 2.2% fee from the onboarded account
+        const feeDeduction = await stripe.transfers.create({
+          amount: deductionAmount,
+          currency: "usd", // Replace with the appropriate currency code
+          destination: yourAccountID, // Replace with your platform account ID
+        });
+
+        res.status(status.HTTP_CREATED).json({ success: true, transfer, feeDeduction });
+      }
+    } else {
+      // Regular case: Deduct 2.2% from the payment and transfer the remaining balance
+      const remainingAmount = paymentAmount - deductionAmount;
+
+      const account = await stripe.accounts.create({
+        country: "IN",
+        type: "custom",
+        email: "shashi@yopmail.com",
+        capabilities: {
+          card_payments: "Y",
+          transfers: "requested",
+        },
+      });
+
+      if (account) {
+        const transfer = await stripe.transfers.create({
+          amount: remainingAmount,
+          currency: "usd", // Replace with the appropriate currency code
+          destination: account.id,
+        });
+
+        res.status(status.HTTP_CREATED).json({ success: true, transfer });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return next(new ErrorHandler(error.message, status.HTTP_INTERNAL_SERVER_ERROR));
+  }
+};
