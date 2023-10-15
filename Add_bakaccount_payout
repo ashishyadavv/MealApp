@@ -1,0 +1,37 @@
+/ Get the connected account ID from your database or the response when onboarding the merchant
+const connectedAccountId = "CONNECTED_ACCOUNT_ID"; // Replace with the actual ID
+
+// Check if the merchant has already provided bank account details
+// If they haven't, you can add bank account information for payouts
+const checkConnectedAccount = async () => {
+  try {
+    const connectedAccount = await stripe.accounts.retrieve(connectedAccountId);
+
+    if (!connectedAccount.external_accounts.data.length) {
+      // Merchant hasn't provided bank account details; add bank account
+      const bankAccount = await stripe.accounts.createExternalAccount(
+        connectedAccountId,
+        {
+          external_account: {
+            object: "bank_account",
+            country: "US",
+            currency: "usd",
+            account_holder_name: "Merchant Name",
+            account_holder_type: "individual",
+            routing_number: "110000000",
+            account_number: "000123456789",
+          },
+        }
+      );
+
+      console.log("Bank account added:", bankAccount);
+    } else {
+      console.log("Merchant has already provided bank account details.");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
+
+// Call the function to check and add bank account details
+checkConnectedAccount();
