@@ -1,0 +1,34 @@
+const Stripe = require("stripe");
+const stripe = new Stripe("YOUR_SECRET_API_KEY");
+
+const message = require("../utils/message");
+const status = require("../utils/status");
+
+exports.showDepositsOrTransfers = async (req, res) => {
+  const accountId = req.params.accountId; // Replace with how you retrieve the account ID
+
+  try {
+    // Retrieve the balance for the specified account
+    const balance = await stripe.balance.retrieve({
+      stripeAccount: accountId,
+    });
+
+    // Retrieve the list of transactions (transfers) for the account
+    const transactions = await stripe.transfers.list({
+      destination: accountId,
+    });
+
+    res.status(status.HTTP_OK).json({
+      accountId: accountId,
+      balance: balance.available, // The available balance
+      transactions: transactions.data, // List of transfers
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(status.HTTP_BAD_REQUEST).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
