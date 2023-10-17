@@ -1,0 +1,42 @@
+const Stripe = require("stripe");
+const stripe = new Stripe("YOUR_SECRET_API_KEY");
+
+const message = require("../utils/message");
+const status = require("../utils/status");
+
+exports.createPaymentIntent = async (req, res) => {
+  try {
+    // Calculate the payment amount and commission fee (2.2%)
+    const paymentAmount = req.body.amount; // Payment amount sent from the client
+    const commissionRate = 2.2; // Commission rate (2.2%)
+    const commissionAmount = (paymentAmount * commissionRate) / 100;
+    const remainingAmount = paymentAmount - commissionAmount;
+
+    // Create a Payment Intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: remainingAmount,
+      currency: "inr",
+    });
+
+    // Here, you should store the paymentIntent.client_secret in your client-side app.
+
+    // You can also create a transfer to the onboarded account
+    const transfer = await stripe.transfers.create({
+      amount: remainingAmount,
+      currency: "inr",
+      destination: "CONNECTED_ACCOUNT_ID", // Replace with the connected account ID
+    });
+
+    // Return the Payment Intent's client secret to your client
+    res.status(status.HTTP_CREATED).json({
+      clientSecret: paymentIntent.client_secret,
+      success: true,
+    });
+  } catch (error) {
+    console.log("Error:", error);
+    res.status(status.HTTP_BAD_REQUEST).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
