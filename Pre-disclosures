@@ -1,0 +1,116 @@
+import React, { useState } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
+import { Checkbox, FormControl, FormControlLabel, Button, FormGroup, Typography, TextField } from '@material-ui/core';
+import DateFnsUtils from '@date-io/date-fns';
+import {
+  MuiPickersUtilsProvider,
+  KeyboardDatePicker,
+  KeyboardTimePicker,
+} from '@material-ui/pickers';
+
+const WelcomePage = () => {
+  const history = useHistory();
+  const { uid } = useParams();
+
+  const [showForm, setShowForm] = useState(false); // State to control form visibility
+  const [selectedDate, setSelectedDate] = useState(new Date()); // State for date picker
+  const [selectedTime, setSelectedTime] = useState(new Date()); // State for time picker
+  const [applicantName, setApplicantName] = useState(''); // State for applicant name
+  const [phoneNumber, setPhoneNumber] = useState(''); // State for phone number
+
+  const handleChange = (e) => {
+    setShowForm(e.target.checked); // Show form when checkbox is checked
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+  };
+
+  const handleTimeChange = (time) => {
+    setSelectedTime(time);
+  };
+
+  const handleNameChange = (e) => {
+    setApplicantName(e.target.value);
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    setPhoneNumber(e.target.value);
+  };
+
+  const handleSubmit = () => {
+    // Handle form submission here
+    console.log('Form submitted');
+  };
+
+  return (
+    <div>
+      <h2>Applicant proceed by accepting pre-disclosures</h2>
+      <FormControl component="fieldset">
+        <FormGroup aria-label="position" row>
+          <FormControlLabel
+            value="pre_disclosure"
+            control={<Checkbox color="primary" />}
+            label="I certify I read and understand the Summary Of Your right under The Fair Credit Reporting"
+            labelPlacement="end"
+            onChange={handleChange}
+          />
+        </FormGroup>
+      </FormControl>
+
+      {showForm && (
+        <div>
+          <form>
+            <Typography variant="h6">Applicant Information</Typography>
+            <TextField
+              label="Applicant Name"
+              value={applicantName}
+              onChange={handleNameChange}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Phone Number"
+              value={phoneNumber}
+              onChange={handlePhoneNumberChange}
+              fullWidth
+              margin="normal"
+            />
+            <MuiPickersUtilsProvider utils={DateFnsUtils}>
+              <KeyboardDatePicker
+                margin="normal"
+                id="date-picker-dialog"
+                label="Select Date"
+                format="MM/dd/yyyy"
+                value={selectedDate}
+                onChange={handleDateChange}
+                KeyboardButtonProps={{
+                  'aria-label': 'change date',
+                }}
+              />
+              <KeyboardTimePicker
+                margin="normal"
+                id="time-picker"
+                label="Select Time"
+                value={selectedTime}
+                onChange={handleTimeChange}
+                KeyboardButtonProps={{
+                  'aria-label': 'change time',
+                }}
+              />
+            </MuiPickersUtilsProvider>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+            >
+              Submit
+            </Button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WelcomePage;
