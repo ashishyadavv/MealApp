@@ -1,0 +1,17 @@
+let baseValidationSchema = {
+  floor_plan: Yup.string(),
+  desired_move_date: Yup.date().when("desired_move", {
+    is: true,
+    then: Yup.date().required("Desired move-in date is required"),
+  }),
+};
+
+// Conditionally add the 'rent_amount' validation based on 'formPresetData.rent_amount'
+if (formPresetData.rent_amount === "required") {
+  baseValidationSchema = {
+    ...baseValidationSchema,
+    rent_amount: Yup.string().required("Rent amount is required"),
+  };
+}
+
+const validateSchema = Yup.object().shape(baseValidationSchema);
