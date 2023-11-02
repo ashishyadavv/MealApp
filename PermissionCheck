@@ -1,0 +1,56 @@
+const SelectedPlans = require("../models").SelectedPlans;
+
+const planBasedPermissionMiddleware = (planName) => {
+  return async (req, res, next) => {
+    try {
+      // Get the user's organizationId from the request or wherever it's stored
+      const organizationId = req.user.organizationId;
+
+      // Query the SelectedPlans model to check if the plan is selected
+      const selectedPlan = await SelectedPlans.findOne({
+        where: {
+          organizationId,
+          name: planName,
+        },
+      });
+
+      // If the plan is selected and the user has the corresponding permission, allow access
+      if (selectedPlan && userHasPermission(req.user, planName)) {
+        return next();
+      }
+
+      // If the plan is not selected or the user doesn't have the permission, deny access
+      return res.status(status.HTTP_FORBIDDEN).json({
+        message: message.ACCESS_DENIED,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(status.HTTP_INTERNAL_SERVER_ERROR).json({
+        message: message.INTERNAL_SERVER_ERROR,
+      });
+    }
+  };
+};
+
+// Function to check if the user has the permission
+const userHasPermission = (user, planName) => {
+  const userPolicies = user.Permissions?.map((row) => row.permission);
+  return userPolicies.includes(planName);
+};
+
+module.exports = planBasedPermissionMiddleware;
+
+
+
+
+const planBasedPermissionMiddleware = require("./planBasedPermissionMiddleware");
+
+// Use the middleware for a specific plan in your routes
+router.post(
+  "/some/route",
+  isAuth,
+  planBasedPermissionMiddleware("plan_name_to_check"),
+  (req, res) => {
+    // Your route handler logic here
+  }
+);
