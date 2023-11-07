@@ -1,0 +1,32 @@
+exports.getPaymentFeeChargesByDestination = async (req, res) => {
+  const accountId = req.params.id; // The ID of the destination payment account
+
+  try {
+    // List transfers with the destination parameter
+    const transfers = await stripe.transfers.list({
+      destination: accountId
+    });
+
+    // Extract payment, fee, and charge details
+    const transactions = transfers.data.map(transfer => ({
+      payment: transfer.amount / 100, // Convert to the appropriate currency units
+      fee: transfer.summary.charge_fee / 100, // Convert to the appropriate currency units
+      charge: transfer.summary.charge_gross / 100 // Convert to the appropriate currency units
+    }));
+
+    // Send the response
+    res.status(status.HTTP_OK).json({
+      accountId: accountId,
+      transactions: transactions,
+      success: true
+    });
+  } catch (error) {
+    console.error("Error:", error);
+
+    // Send an error response
+    res.status(status.HTTP_BAD_REQUEST).json({
+      message: error.message,
+      success: false
+    });
+  }
+};
