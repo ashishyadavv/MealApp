@@ -1,0 +1,47 @@
+const axios = require("axios");
+const message = require("../utils/message");
+const status = require("../utils/status");
+const ApplicantInformationModel = require("../models").ApplicantInformation;
+const ErrorHandler = require("../utils/errorHandler");
+const transporter = require("../utils/transporter");
+const PropertyModel = require("../models").Property;
+const UserModel = require("../models").User;
+const ApplicantUtility = require("../models").ApplicantUtility;
+
+const orderBackgroundCheck = async (req, res, next) => {
+  try {
+    // Assuming req.body contains the data you want to send to the third-party API
+    const requestData = req.body;
+
+    // Fetch data from ApplicantInformationModel
+    let [applicantInfoData, created] = await ApplicantInformationModel.findOrCreate({
+      where: { id: req.body.id },
+      defaults: req.body,
+    });
+
+    if (!created) {
+      applicantInfoData = await ApplicantInformationModel.update(req.body, {
+        where: { id: req.body.id },
+      });
+
+      // Prepare the data for the third-party API
+      const apiEndpoint = `https://${host}/v1/clients/${clientGuid}/applicants`;
+      const apiResponse = await axios.post(apiEndpoint, requestData);
+
+      res.status(status.HTTP_CREATED).json({
+        success: true,
+        applicantInfoData,
+        message: message.DATA_CREATED,
+        thirdPartyApiResponse: apiResponse.data, // Include the API response in your frontend data
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return next(new ErrorHandler(error.message, status.INTERNAL_SERVER_ERROR));
+  }
+};
+
+module.exports = {
+  orderBackgroundCheck,
+  // Add other controller functions here if needed
+};
