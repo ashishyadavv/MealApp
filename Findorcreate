@@ -1,0 +1,34 @@
+const { id, ...restOfData } = req.body;
+
+try {
+  let applicantInfoData;
+  let created;
+
+  if (id) {
+    // If id is provided, try to find the record
+    [applicantInfoData, created] = await ApplicantInformationModel.findOrCreate({
+      where: { id },
+      defaults: restOfData,
+    });
+
+    // If not created, update the existing record
+    if (!created) {
+      await ApplicantInformationModel.update(restOfData, { where: { id } });
+    }
+  } else {
+    // If id is not provided, create a new record
+    [applicantInfoData, created] = await ApplicantInformationModel.findOrCreate({
+      where: {},
+      defaults: restOfData,
+    });
+  }
+
+  res.status(status.HTTP_CREATED).json({
+    success: true,
+    applicantInfoData,
+    message: message.DATA_CREATED,
+  });
+} catch (error) {
+  console.log(error);
+  return next(new ErrorHandler(/* Handle the error appropriately */));
+}
