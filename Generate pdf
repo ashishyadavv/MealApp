@@ -1,0 +1,89 @@
+import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+
+const CanvasRenderPdf = () => {
+  const [textFields, setTextFields] = useState([]); // State to store draggable text fields
+  const [rectangle, setRectangle] = useState({ // State to store the rectangle's position and dimensions
+    x: 100,
+    y: 100,
+    width: 100,
+    height: 50,
+  });
+
+  // Function to handle text field creation and adding to state
+  const handleDragStart = (text) => {
+    const newTextField = {
+      id: Date.now(), // Unique identifier for the text field
+      text,
+      x: 0,
+      y: 0,
+      width: 150,
+      height: 30,
+    };
+    setTextFields([...textFields, newTextField]);
+  };
+
+  // Function to handle rectangle position
+  const handleRectanglePosition = (x, y) => {
+    setRectangle({ ...rectangle, x, y });
+  };
+
+  // Function to submit data to the database and generate PDF
+  const generatePDF = () => {
+    // Create a new instance of jsPDF
+    const pdf = new jsPDF();
+
+    // Add text fields to the PDF
+    textFields.forEach((textField) => {
+      pdf.text(textField.text, textField.x, textField.y);
+    });
+
+    // Add rectangle to the PDF
+    pdf.rect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+
+    // Save the PDF or display it as needed
+    pdf.save('generated_pdf.pdf');
+  };
+
+  return (
+    <div className="canvas-render-pdf">
+      <div id="canvas">
+        {/* Draggable text fields */}
+        {textFields.map((textField) => (
+          <div
+            key={textField.id}
+            className="draggable-text-field"
+            style={{
+              position: 'absolute',
+              left: textField.x + 'px',
+              top: textField.y + 'px',
+              width: textField.width + 'px',
+              height: textField.height + 'px',
+              cursor: 'move',
+            }}
+          >
+            {textField.text}
+          </div>
+        ))}
+
+        {/* Rectangle */}
+        <div
+          id="rectangle"
+          style={{
+            position: 'absolute',
+            left: rectangle.x + 'px',
+            top: rectangle.y + 'px',
+            width: rectangle.width + 'px',
+            height: rectangle.height + 'px',
+            border: '2px solid red',
+          }}
+        ></div>
+      </div>
+
+      {/* Button to submit data and generate PDF */}
+      <button onClick={generatePDF}>Generate PDF</button>
+    </div>
+  );
+};
+
+export default CanvasRenderPdf;
