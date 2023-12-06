@@ -1,0 +1,33 @@
+const handleSearch = (e) => {
+  setSearchTerm(e.target.value);
+
+  if (e.target.value === "") {
+    setApplicantData(originalApplicantData);
+  } else {
+    const filteredArray = originalApplicantData.filter((item) =>
+      item.first_name.toLowerCase().includes(e.target.value.toLowerCase())
+    );
+    setApplicantData(filteredArray);
+  }
+};
+
+const getTimeDifference = (createdAt) => {
+  const currentTime = new Date();
+  const createdAtTime = new Date(createdAt);
+  const timeDifferenceInMilliseconds = currentTime - createdAtTime;
+
+  // Calculate days and hours
+  const daysDifference = Math.floor(timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24));
+  const hoursDifference = Math.floor((timeDifferenceInMilliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+  return `${daysDifference} days and ${hoursDifference} hours ago`;
+};
+
+// Inside your render function
+<ul>
+  {applicantData.map((item) => (
+    <li key={item.id}>
+      {item.first_name} - Registered {getTimeDifference(item.createdAt)}
+    </li>
+  ))}
+</ul>
