@@ -1,0 +1,191 @@
+frontend code.
+
+import Checkbox from "@material-ui/core/Checkbox";Inside the TableBody loop, add a checkbox for each row.<TableBody>
+  {applicantData.map((row, index) => (
+    <TableRow key={index}>
+      <TableCell>
+        <Checkbox
+          checked={selected.includes(row.id)}
+          onChange={() => handleCheckboxChange(row.id)}
+        />
+      </TableCell>
+      {/* ... Other table cells ... */}
+    </TableRow>
+  ))}
+</TableBody>Handle Checkbox Changes:Add the state and the handleCheckboxChange function.const [selected, setSelected] = useState([]);
+
+const handleCheckboxChange = (id) => {
+  const newSelected = [...selected];
+  const index = newSelected.indexOf(id);
+
+  if (index === -1) {
+    newSelected.push(id);
+  } else {
+    newSelected.splice(index, 1);
+  }
+
+  setSelected(newSelected);
+};Merge Selected Items:Add a button or a menu option to trigger the merge operation.<Button onClick={handleMerge} disabled={selected.length < 2}>
+  Merge Selected
+</Button>Implement the handleMerge function.const handleMerge = () => {
+  const mergedData = mergeSelectedItems(selected);
+  console.log("Merged data:", mergedData);
+};
+
+const mergeSelectedItems = (selectedItems) => {
+  // Implement the logic to merge data based on selected items
+  const mergedData = selectedItems.map((id) =>
+    applicantData.find((item) => item.id === id)
+  );
+  return mergedData;
+};Modify the mergeSelectedItems function based on your specific merging requirements.
+
+
+
+
+backend code ....
+
+Create a new API endpoint for merging:// Add this code in your routes or wherever your API routes are defined
+const express = require('express');
+const router = express.Router();
+const applicantController = require('../controllers/applicantController');
+
+// ...
+
+// Add this new route for merging applicants
+router.post('/applicants/merge', applicantController.mergeApplicants);
+
+module.exports = router;Create a new controller method for merging applicants:// Modify your applicantController.js file
+// Import necessary modules and models at the top
+
+// ...
+
+exports.mergeApplicants = async (req, res, next) => {
+  try {
+    const { selectedApplicantIds } = req.body;
+
+    // Retrieve the data of selected applicants from the database
+    const selectedApplicants = await ApplicantInformationModel.findAll({
+      where: {
+        id: {
+          [Op.in]: selectedApplicantIds,
+        },
+      },
+    });
+
+    // Implement the logic to merge the data
+    // For example, combine properties of selected applicants into a single applicant
+    const mergedData = mergeSelectedApplicants(selectedApplicants);
+
+    // Save the merged data back to the database
+    const mergedApplicant = await ApplicantInformationModel.create(mergedData);
+
+    // Remove the original applicants from the database
+    await ApplicantInformationModel.destroy({
+      where: {
+        id: {
+          [Op.in]: selectedApplicantIds,
+        },
+      },
+    });
+
+    res.status(status.HTTP_OK).json({
+      success: true,
+      mergedApplicant,
+      message: message.DATA_MERGED,
+    });
+  } catch (error) {
+    console.log(error);
+    return next(
+      new ErrorHandler(error.message, status.HTTP_INTERNAL_SERVER_ERROR)
+    );
+  }
+};
+
+// Helper function to merge selected applicants (customize this based on your data structure)
+const mergeSelectedApplicants = (applicants) => {
+  // Implement your logic to merge the data of selected applicants
+  // For example, combine properties of selected applicants into a single object
+  // ...
+
+  return mergedData;
+};Adjust the mergeSelectedApplicants function based on your data structure and the logic you want to apply when merging applicants.Update your routes to include the new endpoint:In the file where you define your routes (e.g., app.js or a dedicated routes file), make sure to include the new route:const applicantRoutes = require('./routes/applicantRoutes');
+
+app.use('/api', applicantRoutes);
+
+
+
+new frontend....
+
+Add a checkbox for each row in your applicant listing:Update the relevant part of your frontend code to include checkboxes for each applicant. You can use a state to keep track of the selected applicants.const [selectedApplicants, setSelectedApplicants] = useState([]);
+
+const handleCheckboxChange = (applicantId) => {
+  // Check if the applicant is already selected
+  if (selectedApplicants.includes(applicantId)) {
+    setSelectedApplicants((prevSelected) =>
+      prevSelected.filter((id) => id !== applicantId)
+    );
+  } else {
+    setSelectedApplicants((prevSelected) => [...prevSelected, applicantId]);
+  }
+};
+
+// Inside your component's JSX, add checkboxes to each row
+{applicantList.map((row) => (
+  <TableRow key={row.id}>
+    <TableCell>
+      <Checkbox
+        checked={selectedApplicants.includes(row.id)}
+        onChange={() => handleCheckboxChange(row.id)}
+      />
+    </TableCell>
+    {/* ... other table cells */}
+  </TableRow>
+))}Add a button to trigger the merge operation:Include a button that, when clicked, triggers the merge operation using the selected applicants.const handleMergeClick = async () => {
+  if (selectedApplicants.length < 2) {
+    // You need at least two selected applicants to merge
+    alert('Select at least two applicants to merge.');
+    return;
+  }
+
+  try {
+    // Send a request to your backend to perform the merge
+    const response = await fetch('/api/applicants/merge', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        selectedApplicantIds: selectedApplicants,
+      }),
+    });
+
+    if (response.ok) {
+      // Handle success, update the UI as needed
+      alert('Applicants merged successfully!');
+      // Additional logic to refresh the applicant list, if needed
+    } else {
+      // Handle errors from the backend
+      const data = await response.json();
+      alert(`Error: ${data.message}`);
+    }
+  } catch (error) {
+    console.error('Error:', error.message);
+    alert('An error occurred while merging applicants.');
+  } finally {
+    // Clear the selected applicants after the merge operation
+    setSelectedApplicants([]);
+  }
+};
+
+// Add a button in your component to trigger the merge operation
+<Button onClick={handleMergeClick}>Merge Selected</Button>Adjust your backend API call in the AppList component:Make sure that the API endpoint you're calling in the AppList component matches the backend route you added for merging applicants (/api/applicants/merge).// Example API endpoint for fetching applicant data in the AppList component
+const fetchApplicants = async () => {
+  try {
+    const response = await fetch('/api/applicants');
+    const data = await response.json();
+    setApplicantList(data.applicantInfoData);
+  } catch (error) {
+    console.error('Error fetching applicants:', error.message);
+  }
+};
