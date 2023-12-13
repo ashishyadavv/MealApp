@@ -1,0 +1,63 @@
+import React from 'react';
+import TextField from '@material-ui/core/TextField';
+
+// Assuming you have a function to handle form submission and validation
+const handleSubmit = () => {
+  // Your form submission logic here
+};
+
+const handleChange = (e) => {
+  // Your form field change logic here
+};
+
+const handleBlur = () => {
+  // Your form field blur logic here
+};
+
+const YourFormComponent = () => {
+  const values = {
+    move_in_date: '', // Assuming you have a state for move_in_date
+  };
+
+  const isFutureDate = (selectedDate) => {
+    const currentDate = new Date();
+    const inputDate = new Date(selectedDate);
+    return inputDate > currentDate;
+  };
+
+  const validateDate = (date) => {
+    if (isFutureDate(date)) {
+      // Handle error, for example, set an error state
+      console.error('Move-in date cannot be a future date');
+    } else {
+      // Reset or clear error state if needed
+    }
+  };
+
+  return (
+    <div>
+      <label>Moved In Date</label>
+      <TextField
+        id="date"
+        type="date"
+        variant="outlined"
+        fullWidth="100%"
+        size="small"
+        name="move_in_date"
+        placeholder="Enter Moved In Date"
+        onChange={(e) => {
+          handleChange(e);
+          validateDate(e.target.value);
+        }}
+        onBlur={handleBlur}
+        value={values.move_in_date}
+      />
+
+      {/* Other form fields and buttons */}
+
+      <button onClick={handleSubmit}>Submit</button>
+    </div>
+  );
+};
+
+export default YourFormComponent;
