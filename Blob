@@ -1,0 +1,47 @@
+const generatePDF = () => {
+  try {
+    const pdf = new jsPDF();
+
+    // Convert canvas to blob
+    canvasRef.current.toBlob(async (blob) => {
+      // Get blob as data URL
+      const dataUrl = URL.createObjectURL(blob);
+
+      // Load the blob into pdf.js
+      const pdfDoc = await PDFDocument.load(await fetch(dataUrl).then((res) => res.arrayBuffer()));
+
+      // Iterate through textFields and add them to each page
+      textFields.forEach((textField) => {
+        // Assuming you have only one page, adjust as needed
+        const page = pdfDoc.getPage(0);
+        page.drawText(textField.text, {
+          x: textField.x,
+          y: textField.y,
+          font: await pdfDoc.embedFont(pdfFont),
+          size: 12,
+          color: rgb(0, 0, 0),
+        });
+      });
+
+      // Iterate through signersArray and add them to each page
+      signersArray.forEach((textField) => {
+        // Assuming you have the signature image URL stored in signData
+        const page = pdfDoc.getPage(0);
+        const image = await pdfDoc.embedPng(signData);
+        page.drawImage(image, {
+          x: textField.x,
+          y: textField.y,
+          width: 50, // Adjust as needed
+          height: 20, // Adjust as needed
+        });
+      });
+
+      // Save the modified PDF
+      const modifiedPdfBytes = await pdfDoc.save();
+      const modifiedBlob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+      saveAs(modifiedBlob, 'modified_document.pdf');
+    });
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+  }
+};
