@@ -1,0 +1,73 @@
+import React, { useEffect, useState, useRef } from "react";
+import { Button } from "@material-ui/core";
+import { useHistory, useParams } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import { getLeaseFormByID, getLeaseTextFields, getLeasePdfData } from "../Utility/ApiMethod";
+import { PDFDocument } from "@pdf-lib/core";
+import jsPDF from "jspdf";
+
+const CanvasRenderPdf = () => {
+  const canvasRef = useRef(null);
+  // ... (other existing refs and states)
+
+  const generatePDF = async () => {
+    const existingPdfBytes = await fetch(pdfurl).then((res) => res.arrayBuffer());
+
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+    // Iterate through textFields and add them to each page
+    textFields.forEach((textField) => {
+      pdfDoc.getPages().forEach((page, pageIndex) => {
+        page.drawText(textField.text, { x: textField.x, y: textField.y });
+      });
+    });
+
+    // Iterate through signersArray and add them to each page
+    signersArray.forEach((textField) => {
+      pdfDoc.getPages().forEach((page, pageIndex) => {
+        // Assuming you have the signature image URL stored in signData
+        const imageBytes = await fetch(signData).then((res) => res.arrayBuffer());
+        const image = await pdfDoc.embedPng(imageBytes);
+
+        const { width, height } = image.scale(0.5); // Adjust the scale as needed
+        page.drawImage(image, {
+          x: textField.x,
+          y: textField.y,
+          width,
+          height,
+        });
+      });
+    });
+
+    // Save the modified PDF
+    const modifiedPdfBytes = await pdfDoc.save();
+
+    // Convert to Blob and create a download link
+    const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "modified_document.pdf";
+    link.click();
+  };
+
+  // ... (your existing code)
+
+  return (
+    <>
+      {/* ... (your existing JSX) */}
+      <Button
+        variant="contained"
+        color="primary"
+        style={{
+          borderRadius: "10px",
+          marginLeft: "900px",
+        }}
+        onClick={generatePDF}
+      >
+        Generate Pdf
+      </Button>
+    </>
+  );
+};
+
+export default CanvasRenderPdf;
