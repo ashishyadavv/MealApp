@@ -1,0 +1,46 @@
+import React, { useEffect, useState, useRef } from "react";
+import { Button } from "@material-ui/core";
+import { useHistory, useParams } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import { getLeaseFormByID, getLeaseTextFields, getLeasePdfData } from "../Utility/ApiMethod";
+import jsPDF from "jspdf";
+
+// ... (your existing imports)
+
+const CanvasRenderPdf = () => {
+  // ... (your existing state and ref declarations)
+
+  const generatePDF = () => {
+    const pdf = new jsPDF();
+
+    // Iterate through textFields and add them to the PDF
+    textFields.forEach((textField) => {
+      pdf.text(textField.text, textField.x, textField.y);
+    });
+
+    // Save the PDF
+    pdf.save("rendered_document.pdf");
+  };
+
+  // ... (your existing code)
+
+  return (
+    <>
+      {/* ... (your existing JSX) */}
+      <Button
+        variant="contained"
+        color="primary"
+        style={{
+          borderRadius: "10px",
+          marginLeft: "900px",
+        }}
+        onClick={generatePDF}
+      >
+        Generate Pdf
+      </Button>
+    </>
+  );
+};
+
+export default CanvasRenderPdf;
