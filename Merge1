@@ -1,0 +1,49 @@
+const { status } = require('http-status-codes'); // Replace with your HTTP status library
+const { Op } = require('sequelize'); // Import Sequelize's Op
+const { ApplicantInformationModel, PropertyModel, UserModel, ApplicantUtility, ApplicantPaymentModel, OrderBackgroundModel, MergedApplicantModel } = require('./models'); // Replace with your actual model paths
+
+exports.getAllApplicantInfo = async (req, res, next) => {
+  try {
+    let applicantInfoData = await ApplicantInformationModel.scope("organizationId").findAll({
+      include: [
+        { model: PropertyModel },
+        { model: UserModel },
+        { model: ApplicantUtility },
+        { model: ApplicantPaymentModel, attributes: ["payment_id", "payment_status"] },
+        { model: OrderBackgroundModel, attributes: ["orderGuid"] },
+        { model: MergedApplicantModel }
+      ],
+      attributes: ["payment_id", "payment_status", "orderGuid", "mergedIds"], // Add the attributes you need
+    });
+
+    const mergedIds = applicantInfoData.flatMap(applicant => {
+      const mergedApplicants = applicant.MergedApplicants;
+
+      if (mergedApplicants) {
+        const mergedIdArray = JSON.parse(mergedApplicants.mergedId);
+        return mergedIdArray;
+      }
+
+      return [];
+    });
+
+    let mergedData = await YourModel.findAll({
+      where: {
+        id: {
+          [Op.in]: mergedIds,
+        },
+      },
+      include: [
+        // Your included models here
+      ],
+      attributes: [
+        // Specify the attributes you want to retrieve
+      ],
+    });
+
+    res.status(status.HTTP_OK).json({ success: true, applicantInfoData, mergedData });
+  } catch (error) {
+    console.log(error);
+    return next(/* handle the error */);
+  }
+};
