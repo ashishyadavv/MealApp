@@ -20,7 +20,11 @@ exports.getAllApplicantInfo = async (req, res, next) => {
       const mergedApplicants = applicant.MergedApplicants;
 
       if (mergedApplicants) {
-        const mergedIdArray = JSON.parse(mergedApplicants.mergedId);
+        const mergedIdArray = mergedApplicants.mergedId
+          .replace(/\[|\]/g, '') // Remove square brackets
+          .split(',') // Split the string into an array
+          .map(id => parseInt(id.trim(), 10)); // Convert each string to an integer
+
         return mergedIdArray;
       }
 
