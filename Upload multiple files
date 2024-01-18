@@ -1,0 +1,66 @@
+import React, { useState } from 'react';
+
+const FileUploadForm = () => {
+  const initialFilesState = {};
+
+  const labelsArray = [
+    { label: 'Driving License', required: true },
+    { label: 'ID Card', required: false },
+    // Add more labels as needed
+  ];
+
+  const [uploadedFiles, setUploadedFiles] = useState(initialFilesState);
+
+  const handleFileUpload = (label, file) => {
+    setUploadedFiles((prevFiles) => ({
+      ...prevFiles,
+      [label.toLowerCase()]: file,
+    }));
+  };
+
+  const handleSubmit = () => {
+    const formData = new FormData();
+
+    // Append each file to the FormData
+    Object.keys(uploadedFiles).forEach((label) => {
+      formData.append(label, uploadedFiles[label]);
+    });
+
+    // Use fetch to send the FormData to the backend
+    fetch('http://your-backend-url/upload', {
+      method: 'POST',
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Response from server:', data);
+      })
+      .catch((error) => {
+        console.error('Error sending data to server:', error);
+      });
+  };
+
+  return (
+    <div>
+      {labelsArray.map(({ label, required }) => (
+        <div key={label}>
+          <label>{label}</label>
+          <input
+            type="file"
+            accept=".pdf"
+            onChange={(e) => handleFileUpload(label, e.target.files[0])}
+          />
+          {required && !uploadedFiles[label.toLowerCase()] && (
+            <p style={{ color: 'red' }}>Required file not uploaded</p>
+          )}
+        </div>
+      ))}
+
+      <button onClick={handleSubmit} disabled={!Object.keys(uploadedFiles).length}>
+        Submit
+      </button>
+    </div>
+  );
+};
+
+export default FileUploadForm;
