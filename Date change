@@ -1,0 +1,23 @@
+const handleDateChange = (event) => {
+  const enteredDate = event.target.value;
+
+  // Check if the entered date is in a valid format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  
+  if (!dateRegex.test(enteredDate)) {
+    alert("Please enter a valid date in the format YYYY-MM-DD");
+    formik.setFieldError("desired_movein", "Please enter a valid date");
+    return;
+  }
+
+  const currentDate = new Date();
+  const enteredDateObj = new Date(enteredDate);
+
+  if (enteredDateObj <= currentDate) {
+    alert("Please select a future date");
+    formik.setFieldError("desired_movein", "Please select a future date");
+  } else {
+    formik.setFieldValue("desired_movein", enteredDate);
+    formik.setFieldError("desired_movein", undefined);
+  }
+};
