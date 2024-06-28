@@ -1,0 +1,105 @@
+import React, { useState, useEffect } from 'react';
+
+const Canvas = ({ textFields }) => {
+  const [selectedField, setSelectedField] = useState(null);
+
+  const handleClick = (e, textField) => {
+    setSelectedField(textField);
+  };
+
+  const handleMouseDown = (e, textField) => {
+    // Handle mouse down event if necessary
+  };
+
+  const handleMouseUp = (e) => {
+    // Handle mouse up event if necessary
+  };
+
+  const handleKeyDown = (e) => {
+    if (selectedField) {
+      const { id, x, y } = selectedField;
+      let newX = x;
+      let newY = y;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          newY -= 1;
+          break;
+        case 'ArrowDown':
+          newY += 1;
+          break;
+        case 'ArrowLeft':
+          newX -= 1;
+          break;
+        case 'ArrowRight':
+          newX += 1;
+          break;
+        default:
+          return;
+      }
+
+      const updatedField = { ...selectedField, x: newX, y: newY };
+      setSelectedField(updatedField);
+      updateTextFieldPosition(id, newX, newY);
+    }
+  };
+
+  const updateTextFieldPosition = (id, x, y) => {
+    // Update the position of the text field in the textFields array
+    // This function should update the state or the data source where textFields are stored
+  };
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedField]);
+
+  return (
+    <div>
+      {textFields.map((textField) => (
+        <div
+          key={textField.id}
+          onClick={(e) => handleClick(e, textField)}
+          onMouseUp={(e) => handleMouseUp(e)}
+          onMouseDown={(e) => handleMouseDown(e, textField)}
+          style={{
+            position: "absolute",
+            left: textField.x,
+            top: textField.y,
+            width: textField.width + "px",
+            fontFamily: textField.fontStyle,
+            fontSize: textField.fontSize + "px",
+            lineHeight: "9px",
+            color: textField.fontColor,
+            fontWeight: "normal",
+            fontStyle: "normal",
+            textAlign: "left",
+            height: "17px",
+            padding: "5px",
+            background: textField.backgroundColor,
+            cursor: "move",
+            zIndex: 880,
+            borderRadius: "4px"
+          }}
+        >
+          <i
+            className="fa-regular fa-circle-xmark"
+            style={{
+              position: "relative",
+              float: "left",
+              background: "red",
+              color: "white",
+              top: "-10px",
+              marginLeft: "-10px"
+            }}
+          ></i>
+          {textField.text}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Canvas;
