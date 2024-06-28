@@ -1,0 +1,153 @@
+import React, { useState, useEffect } from 'react';
+
+const Canvas = ({ textFields, setTextFields }) => {
+  const [selectedField, setSelectedField] = useState(null);
+  const [resizeStart, setResizeStart] = useState(null);
+  const [resizedTextField, setResizedTextField] = useState(null);
+  const [dragStart, setDragStart] = useState(null);
+  const [draggedField, setDraggedField] = useState(null);
+  const [resizing, setResizing] = useState(false);
+
+  const handleClick = (e, textField) => {
+    setSelectedField(textField);
+  };
+
+  const handleMouseDown = (e, textField) => {
+    // Handle mouse down event if necessary
+  };
+
+  const handleMouseUp = (e) => {
+    // Handle mouse up event if necessary
+  };
+
+  const handleMouseMove = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (resizing && resizedTextField && !draggedField) {
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+      const newWidth = Math.max(50, resizedTextField.width + deltaX);
+      const newHeight = Math.max(20, resizedTextField.height + deltaY);
+
+      const updatedFields = textFields.map((field) =>
+        field.id === resizedTextField.id ? { ...field, width: newWidth, height: newHeight } : field
+      );
+
+      setTextFields(updatedFields);
+      setResizedTextField((prevField) => ({
+        ...prevField,
+        width: newWidth,
+        height: newHeight,
+      }));
+      setResizeStart({ x: e.clientX, y: e.clientY });
+    }
+
+    if (draggedField) {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+
+      const updatedFields = textFields.map((field) =>
+        field.id === draggedField.id ? { ...field, x: field.x + deltaX, y: field.y + deltaY } : field
+      );
+
+      setTextFields(updatedFields);
+      setDraggedField((prevField) => ({
+        ...prevField,
+        x: draggedField.x + deltaX,
+        y: draggedField.y + deltaY,
+      }));
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (selectedField) {
+      const { id, x, y } = selectedField;
+      let newX = x;
+      let newY = y;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          newY -= 1;
+          break;
+        case 'ArrowDown':
+          newY += 1;
+          break;
+        case 'ArrowLeft':
+          newX -= 1;
+          break;
+        case 'ArrowRight':
+          newX += 1;
+          break;
+        default:
+          return;
+      }
+
+      const updatedField = { ...selectedField, x: newX, y: newY };
+      setSelectedField(updatedField);
+      updateTextFieldPosition(id, newX, newY);
+    }
+  };
+
+  const updateTextFieldPosition = (id, x, y) => {
+    const updatedFields = textFields.map((field) =>
+      field.id === id ? { ...field, x, y } : field
+    );
+    setTextFields(updatedFields);
+  };
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedField]);
+
+  return (
+    <div onMouseMove={handleMouseMove}>
+      {textFields.map((textField) => (
+        <div
+          key={textField.id}
+          onClick={(e) => handleClick(e, textField)}
+          onMouseUp={handleMouseUp}
+          onMouseDown={(e) => handleMouseDown(e, textField)}
+          style={{
+            position: "absolute",
+            left: textField.x,
+            top: textField.y,
+            width: textField.width + "px",
+            fontFamily: textField.fontStyle,
+            fontSize: textField.fontSize + "px",
+            lineHeight: "9px",
+            color: textField.fontColor,
+            fontWeight: "normal",
+            fontStyle: "normal",
+            textAlign: "left",
+            height: "17px",
+            padding: "5px",
+            background: textField.backgroundColor,
+            cursor: "move",
+            zIndex: 880,
+            borderRadius: "4px"
+          }}
+        >
+          <i
+            className="fa-regular fa-circle-xmark"
+            style={{
+              position: "relative",
+              float: "left",
+              background: "red",
+              color: "white",
+              top: "-10px",
+              marginLeft: "-10px"
+            }}
+          ></i>
+          {textField.text}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Canvas;
