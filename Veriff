@@ -1,194 +1,50 @@
- To allow users to upload documents and take a selfie for verification directly in the frontend, you can leverage Veriff's Embedded Verification SDK. This SDK enables a seamless in-app user verification experience, including document scanning and a selfie check.
-
-
----
-
-Steps to Integrate Veriff's Embedded Verification SDK
-
-1. Prerequisites
-
-Get your Veriff API Key and configure your backend to create sessions (you already have this step).
-
-Install and serve the frontend app where the SDK will run.
-
-
-
----
-
-2. Backend: Create a Session and Return a Token
-
-Ensure your backend creates a Veriff session and provides the sessionToken to the frontend.
-
-Here’s an example for creating and returning the session token:
-
-const createVeriffSession = async (applicantInfo) => {
-    const veriffApiKey = process.env.VERIFF_API;
-
-    try {
-        const response = await axios.post(
-            'https://stationapi.veriff.com/v1/sessions',
-            {
-                verification: {
-                    person: {
-                        firstName: applicantInfo.firstName,
-                        lastName: applicantInfo.lastName,
-                    },
-                    document: {
-                        type: 'PASSPORT', // Adjust as needed
-                    },
-                },
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-AUTH-CLIENT': veriffApiKey,
-                },
-            }
-        );
-
-        return response.data.verification.sessionToken;
-    } catch (error) {
-        console.error('Error creating Veriff session:', error);
-        throw error;
-    }
-};
-
-app.post('/create-veriff-session', async (req, res) => {
-    try {
-        const sessionToken = await createVeriffSession(req.body);
-        res.json({ sessionToken });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create Veriff session' });
-    }
-});
-
-
----
-
-3. Frontend: Integrate Veriff’s Embedded SDK
-
-1. Add Veriff’s Embedded SDK to your React frontend:
-
-Install the SDK:
-
-npm install @veriff/js-sdk
-
-
-
-2. Use the SDK in your React component:
-
-
-
-import React, { useEffect } from 'react';
-import { Veriff } from '@veriff/js-sdk';
-import axios from 'axios';
+import React, { useEffect } from "react";
+import { Veriff } from "@veriff/js-sdk"; // Correct import syntax
+import { createVeriffFrame } from "@veriff/incontext-sdk"; // Correct import
+import { createVeriffSession } from "./Utility/ApiMethod"; // Import from Utility
 
 const VeriffIntegration = () => {
-    const initializeVeriff = async () => {
-        try {
-            // Step 1: Fetch session token from backend
-            const { data } = await axios.post('http://localhost:3000/create-veriff-session', {
-                firstName: 'John', // Replace with dynamic user data
-                lastName: 'Doe',
-            });
-
-            const sessionToken = data.sessionToken;
-
-            // Step 2: Initialize Veriff
-            const veriff = Veriff({
-                host: 'https://station.veriff.com',
-                sessionToken: sessionToken,
-                onSession: (error, result) => {
-                    if (error) {
-                        console.error('Veriff session error:', error);
-                    } else {
-                        console.log('Veriff session result:', result);
-                    }
-                },
-            });
-
-            // Step 3: Mount Veriff UI to a container
-            veriff.mount('#veriff-container');
-        } catch (error) {
-            console.error('Error initializing Veriff:', error);
+  useEffect(() => {
+    // Initialize Veriff
+    const veriff = Veriff({
+      apiKey: "3db8ca21-2cce-4a06-b43e-80f49a247e70", // Your API key
+      parentId: "veriff-root",
+      onSession: function (err, response) {
+        if (err) {
+          console.error("Error creating session:", err);
+          return;
         }
-    };
+        // Redirect to the verification URL
+        window.location.href = response.verification.url;
+        // Optionally create Veriff Frame
+        createVeriffFrame({ url: response.verification.url });
+      },
+    });
 
-    useEffect(() => {
-        initializeVeriff();
-    }, []);
+    // Call your API to create a Veriff session
+    createVeriffSession()
+      .then((response) => {
+        if (response?.verification?.url) {
+          // Mount Veriff
+          veriff.mount();
+        } else {
+          console.error("Invalid session response:", response);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching Veriff session:", error);
+      });
+  }, []);
 
-    return (
-        <div>
-            <h1>Verify Your Identity</h1>
-            <div id="veriff-container" style={{ height: '500px', width: '100%' }}></div>
-        </div>
-    );
+  return (
+    <div>
+      <h1>Verify Your Identity</h1>
+      <div
+        id="veriff-root" // Correct ID to match the parentId
+        style={{ height: "500px", width: "100%" }} // Proper style object
+      ></div>
+    </div>
+  );
 };
 
 export default VeriffIntegration;
-
-
----
-
-4. Workflow Explanation
-
-1. Session Token Creation:
-
-The backend creates a session using the Veriff API and returns a sessionToken to the frontend.
-
-
-
-2. Frontend Initialization:
-
-The Veriff SDK is initialized with the sessionToken.
-
-The SDK renders a user interface (document scanning and selfie capture) in the #veriff-container div.
-
-
-
-3. Verification Process:
-
-Users scan their document and take a selfie directly within the app.
-
-Veriff handles the verification process and provides callbacks for session status.
-
-
-
-
-
----
-
-5. Styling and Customization
-
-You can customize the Veriff UI via their SDK customization options.
-
-Example:
-
-const veriff = Veriff({
-    host: 'https://station.veriff.com',
-    sessionToken: sessionToken,
-    theme: {
-        color: {
-            primary: '#4caf50', // Customize primary color
-            text: '#333333',   // Customize text color
-        },
-    },
-});
-
-
----
-
-6. Testing
-
-Run your backend to serve the session token.
-
-Start your React frontend and navigate to the document upload section.
-
-Verify the document scanning and selfie feature.
-
-
-
----
-
-Let me know if you need help debugging or further customization!
