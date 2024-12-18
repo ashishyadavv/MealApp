@@ -1,0 +1,77 @@
+ > s applicantUpload.js > [o] uploadToVerif> [e] response
+=
+19
+2° 21
+const
+try
+22
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547
+548
+549
+550
+551
+552
+553
+554
+555
+556
+557
+3
+nat Add Logs
+treateVeriffSession = async (applicantInfoData) => (
+Y
+const veriffApikey = process.env.VERIFF_API;
+const response = await axios.post(
+'https://stationapi.veriff.com/v1/sessions"
+Or
+verification:
+callback: "https://veriff.com"
+person: f
+firstName: "John"
+lastName: "Smith"
+idNumber: "123456789"
+firstName: applicantInfoData.first_name,
+lastName: applicantInfoData.last_name,
+idNumber: applicantInfoData.ssn,
+document: ( number: "B01234567", type: "PASSPORT", country: "EE" )
+// document:
+/ number: applicantInfoData.document_number, // Replace with actual field
+C
+type: "ID CARD",
+I
+C
+country: "EE",
+headers: (
+"Content-Type": "application/json"
+"X-AUTH-CLIENT": veriffApiKey,
+"
+return response.data.verification.id;
+catch (error) (
+console.error("Veriff API error:", error);
+throw error;
+CyberCoder Improve Code
+Search
