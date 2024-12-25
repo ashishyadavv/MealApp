@@ -1,12 +1,50 @@
-{
-  tag.field_type === "Address Field" && tag.admin && (
+import React, { useState } from "react";
+import TextField from "@mui/material/TextField";
+
+const DynamicForm = () => {
+  const [formState, setFormState] = useState({});
+  const [templateData] = useState([
+    { templateId: "templateId123" }
+  ]);
+  const [currentTemplateIndex] = useState(0);
+
+  const handleInputChange = (e, index, field) => {
+    const { value } = e.target;
+    const currentTemplateId = templateData[currentTemplateIndex]?.templateId;
+
+    setFormState((prevState) => {
+      const updatedFormState = { ...prevState };
+
+      if (!updatedFormState[currentTemplateId]) {
+        updatedFormState[currentTemplateId] = {};
+      }
+
+      if (!updatedFormState[currentTemplateId][index]) {
+        updatedFormState[currentTemplateId][index] = {};
+      }
+
+      if (field) {
+        // Update address field (nested structure)
+        updatedFormState[currentTemplateId][index].value = {
+          ...updatedFormState[currentTemplateId][index].value,
+          [field]: value,
+        };
+      } else {
+        // Update non-address field (simple structure)
+        updatedFormState[currentTemplateId][index].value = value;
+      }
+
+      return updatedFormState;
+    });
+  };
+
+  const renderAddressField = (index) => (
     <div>
-      <label>{tag.name}</label>
+      <label>Address Field</label>
       <TextField
         variant="outlined"
         fullWidth
         size="small"
-        name={`custom_tag_${index}_city`}
         placeholder="City"
         onChange={(e) => handleInputChange(e, index, "city")}
         value={
@@ -14,13 +52,11 @@
             templateData[currentTemplateIndex]?.templateId
           ]?.[index]?.value?.city || ""
         }
-        onBlur={handleBlur}
       />
       <TextField
         variant="outlined"
         fullWidth
         size="small"
-        name={`custom_tag_${index}_state`}
         placeholder="State"
         onChange={(e) => handleInputChange(e, index, "state")}
         value={
@@ -28,13 +64,11 @@
             templateData[currentTemplateIndex]?.templateId
           ]?.[index]?.value?.state || ""
         }
-        onBlur={handleBlur}
       />
       <TextField
         variant="outlined"
         fullWidth
         size="small"
-        name={`custom_tag_${index}_zip`}
         placeholder="Zip"
         onChange={(e) => handleInputChange(e, index, "zip")}
         value={
@@ -42,35 +76,36 @@
             templateData[currentTemplateIndex]?.templateId
           ]?.[index]?.value?.zip || ""
         }
-        onBlur={handleBlur}
       />
     </div>
-  )
-}
+  );
 
+  const renderTextField = (index) => (
+    <div>
+      <label>Text Field</label>
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        placeholder="Enter text"
+        onChange={(e) => handleInputChange(e, index)}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value || ""
+        }
+      />
+    </div>
+  );
 
-
-input change
-const handleInputChange = (e, index, field) => {
-  const { value } = e.target;
-  const currentTemplateId = templateData[currentTemplateIndex]?.templateId;
-
-  setFormState((prevState) => {
-    const updatedFormState = { ...prevState };
-
-    if (!updatedFormState[currentTemplateId]) {
-      updatedFormState[currentTemplateId] = {};
-    }
-
-    if (!updatedFormState[currentTemplateId][index]) {
-      updatedFormState[currentTemplateId][index] = { value: {} };
-    }
-
-    updatedFormState[currentTemplateId][index].value = {
-      ...updatedFormState[currentTemplateId][index].value,
-      [field]: value,
-    };
-
-    return updatedFormState;
-  });
+  return (
+    <form>
+      <h3>Dynamic Form</h3>
+      {renderAddressField(0)} {/* Address Field Example */}
+      {renderTextField(1)} {/* Non-Address Field Example */}
+      <pre>{JSON.stringify(formState, null, 2)}</pre> {/* Debug: See formState */}
+    </form>
+  );
 };
+
+export default DynamicForm;
