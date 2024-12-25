@@ -1,0 +1,149 @@
+import React, { useState } from "react";
+import TextField from "@mui/material/TextField";
+
+const DynamicForm = () => {
+  const [formState, setFormState] = useState({});
+  const [templateData] = useState([{ templateId: "templateId123" }]);
+  const [currentTemplateIndex] = useState(0);
+
+  const handleInputChange = (e, index, field) => {
+    const { value } = e.target;
+    const currentTemplateId = templateData[currentTemplateIndex]?.templateId;
+
+    setFormState((prevState) => {
+      const updatedFormState = { ...prevState };
+
+      if (!updatedFormState[currentTemplateId]) {
+        updatedFormState[currentTemplateId] = {};
+      }
+
+      if (!updatedFormState[currentTemplateId][index]) {
+        updatedFormState[currentTemplateId][index] = {};
+      }
+
+      if (field) {
+        // Update field with nested object
+        updatedFormState[currentTemplateId][index].value = {
+          ...updatedFormState[currentTemplateId][index].value,
+          [field]: value,
+        };
+      } else {
+        // Update simple or currency fields
+        updatedFormState[currentTemplateId][index].value = value;
+      }
+
+      return updatedFormState;
+    });
+  };
+
+  const handleCurrencyChange = (e, index) => {
+    const inputValue = e.target.value;
+    const currentTemplateId = templateData[currentTemplateIndex]?.templateId;
+
+    const formattedValue = isNaN(inputValue)
+      ? inputValue // If the input is invalid, keep it as is
+      : `$${parseFloat(inputValue).toFixed(2)}`; // Convert to currency format
+
+    setFormState((prevState) => {
+      const updatedFormState = { ...prevState };
+
+      if (!updatedFormState[currentTemplateId]) {
+        updatedFormState[currentTemplateId] = {};
+      }
+
+      updatedFormState[currentTemplateId][index] = { value: formattedValue };
+
+      return updatedFormState;
+    });
+  };
+
+  const renderAddressField = (index) => (
+    <div>
+      <label>Address Field</label>
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        placeholder="City"
+        onChange={(e) => handleInputChange(e, index, "city")}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value?.city || ""
+        }
+      />
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        placeholder="State"
+        onChange={(e) => handleInputChange(e, index, "state")}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value?.state || ""
+        }
+      />
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        placeholder="Zip"
+        onChange={(e) => handleInputChange(e, index, "zip")}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value?.zip || ""
+        }
+      />
+    </div>
+  );
+
+  const renderTextField = (index) => (
+    <div>
+      <label>Text Field</label>
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        placeholder="Enter text"
+        onChange={(e) => handleInputChange(e, index)}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value || ""
+        }
+      />
+    </div>
+  );
+
+  const renderCurrencyField = (index) => (
+    <div>
+      <label>Currency Field</label>
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        placeholder="Enter amount"
+        onChange={(e) => handleCurrencyChange(e, index)}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value || ""
+        }
+      />
+    </div>
+  );
+
+  return (
+    <form>
+      <h3>Dynamic Form</h3>
+      {renderAddressField(0)} {/* Address Field Example */}
+      {renderTextField(1)} {/* Non-Address Field Example */}
+      {renderCurrencyField(2)} {/* Currency Field Example */}
+      <pre>{JSON.stringify(formState, null, 2)}</pre> {/* Debug: See formState */}
+    </form>
+  );
+};
+
+export default DynamicForm;
