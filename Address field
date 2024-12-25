@@ -1,0 +1,76 @@
+{
+  tag.field_type === "Address Field" && tag.admin && (
+    <div>
+      <label>{tag.name}</label>
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        name={`custom_tag_${index}_city`}
+        placeholder="City"
+        onChange={(e) => handleInputChange(e, index, "city")}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value?.city || ""
+        }
+        onBlur={handleBlur}
+      />
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        name={`custom_tag_${index}_state`}
+        placeholder="State"
+        onChange={(e) => handleInputChange(e, index, "state")}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value?.state || ""
+        }
+        onBlur={handleBlur}
+      />
+      <TextField
+        variant="outlined"
+        fullWidth
+        size="small"
+        name={`custom_tag_${index}_zip`}
+        placeholder="Zip"
+        onChange={(e) => handleInputChange(e, index, "zip")}
+        value={
+          formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value?.zip || ""
+        }
+        onBlur={handleBlur}
+      />
+    </div>
+  )
+}
+
+
+
+input change
+const handleInputChange = (e, index, field) => {
+  const { value } = e.target;
+  const currentTemplateId = templateData[currentTemplateIndex]?.templateId;
+
+  setFormState((prevState) => {
+    const updatedFormState = { ...prevState };
+
+    if (!updatedFormState[currentTemplateId]) {
+      updatedFormState[currentTemplateId] = {};
+    }
+
+    if (!updatedFormState[currentTemplateId][index]) {
+      updatedFormState[currentTemplateId][index] = { value: {} };
+    }
+
+    updatedFormState[currentTemplateId][index].value = {
+      ...updatedFormState[currentTemplateId][index].value,
+      [field]: value,
+    };
+
+    return updatedFormState;
+  });
+};
