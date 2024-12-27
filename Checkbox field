@@ -1,0 +1,52 @@
+const handleInputChange = (e, index, field, fieldType) => {
+  const { name, value, type, checked } = e.target;
+  const currentTemplateId = templateData[currentTemplateIndex]?.templateId;
+
+  setFormState((prevState) => {
+    const updatedFormState = { ...prevState };
+
+    if (!updatedFormState[currentTemplateId]) {
+      updatedFormState[currentTemplateId] = {};
+    }
+
+    if (!updatedFormState[currentTemplateId][index]) {
+      updatedFormState[currentTemplateId][index] = {};
+    }
+
+    if (fieldType === "Checkbox Field") {
+      // Handle checkbox fields
+      updatedFormState[currentTemplateId][index].value = checked;
+    } else if (field) {
+      // Handle nested fields like address (e.g., city, state, zip)
+      updatedFormState[currentTemplateId][index].value = {
+        ...updatedFormState[currentTemplateId][index].value,
+        [field]: value,
+      };
+    } else {
+      // Handle simple fields
+      updatedFormState[currentTemplateId][index].value = value;
+    }
+
+    return updatedFormState;
+  });
+};
+
+
+
+
+{tag.field_type === "Checkbox Field" && tag.admin && (
+  <FormControlLabel
+    control={
+      <Checkbox
+        color="primary"
+        checked={
+          !!formState[
+            templateData[currentTemplateIndex]?.templateId
+          ]?.[index]?.value
+        }
+        onChange={(e) => handleInputChange(e, index, null, "Checkbox Field")}
+      />
+    }
+    label={tag.name}
+  />
+)}
