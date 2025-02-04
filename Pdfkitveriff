@@ -1,0 +1,89 @@
+const PDFDocument = require("pdfkit");
+const axios = require("axios");
+const crypto = require("crypto");
+
+exports.VeriffDocuments = async (req, res) => {
+  try {
+    const sessionId = "ca58cc12-1f9f-48a0-ba58-debdf227ee36";
+    const response = await axios.get(
+      `https://stationapi.veriff.com/v1/sessions/${sessionId}/media`,
+      {
+        headers: {
+          "X-AUTH-CLIENT": process.env.VERIFF_API,
+          "X-HMAC-SIGNATURE": crypto
+            .createHmac("sha256", process.env.VERIFF_SECRET)
+            .update(sessionId)
+            .digest("hex"),
+        },
+      }
+    );
+
+    const { images } = response.data;
+    if (!images || !images.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No media files found",
+      });
+    }
+
+    const doc = new PDFDocument();
+    let buffers = [];
+
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => {
+      const pdfBuffer = Buffer.concat(buffers);
+      res.setHeader("Content-Disposition", "attachment; filename=VeriffDocuments.pdf");
+      res.setHeader("Content-Type", "application/pdf");
+      res.send(pdfBuffer);
+    });
+
+    const imageSpacing = 20; // Space between images
+
+    await Promise.all(
+      images.map(async (image) => {
+        try {
+          const mediaResponse = await axios.get(image.url, {
+            headers: {
+              "X-AUTH-CLIENT": process.env.VERIFF_API,
+              "X-HMAC-SIGNATURE": crypto
+                .createHmac("sha256", process.env.VERIFF_SECRET)
+                .update(image.id)
+                .digest("hex"),
+            },
+            responseType: "arraybuffer",
+          });
+
+          const imgBuffer = Buffer.from(mediaResponse.data, "binary");
+          const maxWidth = 500; // Maximum width for images
+          const maxHeight = 400; // Maximum height for images
+
+          // Add image to the PDF
+          doc.image(imgBuffer, {
+            fit: [maxWidth, maxHeight],
+            align: "center",
+            valign: "center",
+          });
+
+          // Add spacing after the image
+          doc.moveDown(imageSpacing / 10);
+
+          // Check if the current page is full and add a new page if necessary
+          if (doc.y + maxHeight + imageSpacing > doc.page.height) {
+            doc.addPage();
+          }
+        } catch (imgError) {
+          console.error(`Error fetching image ${image.id}:`, imgError);
+        }
+      })
+    );
+
+    doc.end();
+  } catch (error) {
+    console.error("Error in VeriffDocuments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error downloading documents",
+      error: error.message,
+    });
+  }
+};
