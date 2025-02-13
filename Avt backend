@@ -1,0 +1,140 @@
+Approach to Designing the Backend (Node.js + Sequelize)
+
+We will break this down into four key steps:
+
+1. Database Schema Design
+
+You'll need three main tables:
+
+Users: To track user progress.
+
+Questions: Stores aviation quiz questions.
+
+UserAnswers: Records user responses and correctness.
+
+
+
+---
+
+2. Setup Sequelize & Migrations
+
+Install Required Packages
+
+Run this command to install Sequelize and PostgreSQL (or MySQL, depending on your choice):
+
+npm install sequelize sequelize-cli pg pg-hstore
+
+Then, initialize Sequelize:
+
+npx sequelize-cli init
+
+
+---
+
+3. Define Sequelize Models & Migrations
+
+Users Model
+
+npx sequelize-cli model:generate --name User --attributes name:string,email:string
+
+Questions Model
+
+npx sequelize-cli model:generate --name Question --attributes questionText:string,correctButton:string,difficulty:string
+
+UserAnswers Model
+
+npx sequelize-cli model:generate --name UserAnswer --attributes userId:integer,questionId:integer,selectedButton:string,isCorrect:boolean
+
+Run migrations:
+
+npx sequelize-cli db:migrate
+
+
+---
+
+4. Backend Logic for Answer Validation
+
+Create a Question Controller (controllers/questionController.js):
+
+const { Question, UserAnswer } = require("../models");
+
+exports.getQuestions = async (req, res) => {
+    try {
+        const { difficulty } = req.query;
+        const questions = await Question.findAll({ where: { difficulty } });
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch questions" });
+    }
+};
+
+exports.submitAnswer = async (req, res) => {
+    try {
+        const { userId, questionId, selectedButton } = req.body;
+
+        const question = await Question.findByPk(questionId);
+        if (!question) return res.status(404).json({ error: "Question not found" });
+
+        const isCorrect = question.correctButton === selectedButton;
+
+        await UserAnswer.create({ userId, questionId, selectedButton, isCorrect });
+
+        res.json({ message: isCorrect ? "Correct answer!" : "Wrong answer!", isCorrect });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to submit answer" });
+    }
+};
+
+
+---
+
+5. Define Routes
+
+Create a routes file (routes/questionRoutes.js):
+
+const express = require("express");
+const router = express.Router();
+const questionController = require("../controllers/questionController");
+
+router.get("/questions", questionController.getQuestions);
+router.post("/submit-answer", questionController.submitAnswer);
+
+module.exports = router;
+
+
+---
+
+6. Integrate with Express Server
+
+Modify server.js:
+
+const express = require("express");
+const app = express();
+const db = require("./models");
+const questionRoutes = require("./routes/questionRoutes");
+
+app.use(express.json());
+app.use("/api", questionRoutes);
+
+const PORT = 5000;
+db.sequelize.sync().then(() => {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+});
+
+
+---
+
+Next Steps
+
+1. Seed the database with aviation-related questions.
+
+
+2. Enhance security (JWT authentication, validation).
+
+
+3. Add a leaderboard to track user performance.
+
+
+
+Would you like help with seeding data or authentication (JWT)?
+
